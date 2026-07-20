@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme {
+  /* Dark-first palette — INOVI trust infrastructure */
+  --color-ink: #0a0d13;
+  --color-surface: #10141c;
+  --color-card: #131924;
+  --color-text: #e7eaf0;
+  --color-muted: #94a0b4;
+  --color-dim: #5c6678;
+  --color-line: #1f2735;
+  --color-accent: #4593ff;
+  --color-accent-soft: #12233d;
+
+  /* Product accents */
+  --color-isale: #4593ff;
+  --color-isale-soft: #12233d;
+  --color-agro: #46b876;
+  --color-agro-soft: #10281b;
+  --color-firma: #d9a34a;
+  --color-firma-soft: #2a2214;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jbmono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius-card: 12px;
+}
+
+/* Light theme overrides */
+html.light {
+  --color-ink: #f7f8fa;
+  --color-surface: #eff1f5;
+  --color-card: #ffffff;
+  --color-text: #141821;
+  --color-muted: #566070;
+  --color-dim: #8a93a5;
+  --color-line: #e2e6ee;
+  --color-accent: #1d6fe8;
+  --color-accent-soft: #e7f0fe;
+  --color-isale: #1d6fe8;
+  --color-isale-soft: #e7f0fe;
+  --color-agro: #23864f;
+  --color-agro-soft: #e8f5ee;
+  --color-firma: #b07d24;
+  --color-firma-soft: #faf3e4;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* Hairline grid backdrop for hero */
+.grid-backdrop {
+  background-image: linear-gradient(var(--color-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 35%, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 35%, black 30%, transparent 75%);
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
