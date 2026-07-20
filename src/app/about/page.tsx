@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { ArrowRight, Github, MapPin } from "lucide-react";
+import { ArrowRight, Github } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
+import { Stamp } from "@/components/Stamp";
 
 export const metadata: Metadata = {
   title: "About",
@@ -23,10 +24,7 @@ export default function AboutPage() {
         <div className="grid-backdrop absolute inset-0" aria-hidden="true" />
         <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:pt-28">
           <Reveal>
-            <div className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-3.5 py-1.5 text-xs font-medium tracking-wide text-muted">
-              <MapPin size={12} className="text-accent" />
-              LONDON, UNITED KINGDOM
-            </div>
+            <Stamp>London, United Kingdom</Stamp>
           </Reveal>
           <Reveal delay={0.08}>
             <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight text-text sm:text-5xl">

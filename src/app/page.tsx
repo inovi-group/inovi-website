@@ -3,9 +3,10 @@ import Link from "next/link";
 import {
   ArrowRight,
   Github,
-  LineChart,
-  Droplets,
+  PlayCircle,
+  Sprout,
   FileCheck2,
+  Zap,
   ShieldCheck,
   Lock,
   Scale,
@@ -13,11 +14,12 @@ import {
 import { Reveal } from "@/components/Reveal";
 import { ChainCanvas } from "@/components/ChainCanvas";
 import { JsonLd } from "@/components/JsonLd";
+import { Stamp } from "@/components/Stamp";
 
 export const metadata: Metadata = {
-  title: "INOVI Group — Trust Infrastructure for the AI Economy",
+  title: "INOVI Group — System-First AI Governance",
   description:
-    "INOVI builds verifiable AI systems: an open cryptographic audit-trail specification, revenue intelligence, and applied field products. London, UK.",
+    "Zero-latency (<50ms) inline governance proxy for real-time model verification and EU AI Act compliance. Open cryptographic audit-trail specification. London, UK.",
   alternates: { canonical: "https://inovigroup.co.uk" },
 };
 
@@ -30,36 +32,42 @@ const orgSchema = {
   sameAs: ["https://github.com/inovi-group"],
 };
 
-const products = [
-  {
-    href: "/isale",
-    name: "iSale",
-    tagline: "Revenue intelligence",
-    description:
-      "Detects the hidden risks in commercial deals before signature. Pragmatic, CRM-native, measurable ROI.",
-    icon: LineChart,
-    color: "text-isale",
-    soft: "bg-isale-soft",
-  },
-  {
-    href: "/agro",
-    name: "AGRO",
-    tagline: "Smart irrigation",
-    description:
-      "Intelligent irrigation for smallholder farmers — no smartphone required. Field-tested water savings.",
-    icon: Droplets,
-    color: "text-agro",
-    soft: "bg-agro-soft",
-  },
+const pillars = [
   {
     href: "/firma",
-    name: "FIRMA",
-    tagline: "Cryptographic audit trails",
+    external: false,
+    name: "FIRMA TS",
+    tagline: "Audit & integrity",
     description:
-      "An open specification for tamper-evident records: hash-chained, signed, independently verifiable.",
+      "Cryptographic audit trails & decision integrity — SHA3-512 hash chains with Ed25519-signed records.",
     icon: FileCheck2,
     color: "text-firma",
     soft: "bg-firma-soft",
+    cta: "Learn more",
+  },
+  {
+    href: "/agro",
+    external: false,
+    name: "AGRO TS",
+    tagline: "Factual verification",
+    description:
+      "Domain-specific factual verification for agricultural AI systems.",
+    icon: Sprout,
+    color: "text-agro",
+    soft: "bg-agro-soft",
+    cta: "Learn more",
+  },
+  {
+    href: "mailto:contact@inovigroup.co.uk?subject=ENERGY%20TS",
+    external: true,
+    name: "ENERGY TS",
+    tagline: "Compliance guardrails",
+    description:
+      "High-throughput compliance & safety guardrails for industrial energy grids.",
+    icon: Zap,
+    color: "text-isale",
+    soft: "bg-isale-soft",
+    cta: "Get in touch",
   },
 ];
 
@@ -98,31 +106,29 @@ export default function HomePage() {
         <div className="grid-backdrop absolute inset-0" aria-hidden="true" />
         <div className="relative mx-auto max-w-6xl px-5 pb-10 pt-20 sm:pt-28">
           <Reveal>
-            <div className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-3.5 py-1.5 text-xs font-medium tracking-wide text-muted">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-              INOVI GROUP LTD — LONDON, UK
-            </div>
+            <Stamp>Trust infrastructure — London, UK</Stamp>
           </Reveal>
           <Reveal delay={0.08}>
             <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight text-text sm:text-6xl">
-              Trust infrastructure for the AI&nbsp;economy.
+              INOVI Group — System-First AI&nbsp;Governance
             </h1>
           </Reveal>
           <Reveal delay={0.16}>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted">
-              INOVI builds systems that make AI decisions verifiable — an open
-              cryptographic audit-trail specification, and applied products that
-              prove the technology in the field.
+              Zero-latency (&lt;50ms) inline governance proxy for real-time
+              model verification and EU AI Act compliance.
             </p>
           </Reveal>
           <Reveal delay={0.24}>
             <div className="mt-9 flex flex-wrap items-center gap-4">
-              <Link
-                href="/firma"
+              <a
+                href="https://inovi-group.github.io/firma-spec/demo/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
               >
-                Explore the technology <ArrowRight size={16} />
-              </Link>
+                <PlayCircle size={16} /> Launch the live demo
+              </a>
               <a
                 href="https://github.com/inovi-group/firma-spec"
                 target="_blank"
@@ -156,25 +162,21 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Products */}
+      {/* Product pillars */}
       <section className="mx-auto max-w-6xl px-5 py-20">
         <Reveal>
           <h2 className="text-2xl font-bold tracking-tight text-text sm:text-3xl">
-            One trust architecture. Three products.
+            Three trust systems. One governance layer.
           </h2>
           <p className="mt-3 max-w-2xl text-muted">
-            Each product stands on its own commercial merit — and each one feeds
-            the same verifiable decision layer. iSale is the first field proof of
-            the Trust Sensor.
+            Each product stands on its own commercial merit — and each one runs
+            on the same verifiable governance infrastructure.
           </p>
         </Reveal>
         <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {products.map((p, i) => (
-            <Reveal key={p.name} delay={i * 0.08}>
-              <Link
-                href={p.href}
-                className="group flex h-full flex-col rounded-card border border-line bg-card p-6 transition-colors hover:border-accent"
-              >
+          {pillars.map((p, i) => {
+            const inner = (
+              <>
                 <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${p.soft}`}>
                   <p.icon size={19} className={p.color} />
                 </div>
@@ -184,12 +186,23 @@ export default function HomePage() {
                 </div>
                 <p className="mt-2.5 flex-1 text-sm leading-relaxed text-muted">{p.description}</p>
                 <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-accent">
-                  Learn more
+                  {p.cta}
                   <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
                 </span>
-              </Link>
-            </Reveal>
-          ))}
+              </>
+            );
+            const cls =
+              "group flex h-full flex-col rounded-card border border-line bg-card p-6 transition-colors hover:border-accent";
+            return (
+              <Reveal key={p.name} delay={i * 0.08}>
+                {p.external ? (
+                  <a href={p.href} className={cls}>{inner}</a>
+                ) : (
+                  <Link href={p.href} className={cls}>{inner}</Link>
+                )}
+              </Reveal>
+            );
+          })}
         </div>
       </section>
 
@@ -224,21 +237,23 @@ export default function HomePage() {
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-muted">
               We work with commercial teams, agritech partners, and technical
-              programmes. Read the open specification or get in touch.
+              programmes. Try the live demo or get in touch.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <a
-                href="mailto:contact@inovigroup.co.uk"
+                href="https://inovi-group.github.io/firma-spec/demo/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                Launch the live demo
+              </a>
+              <a
+                href="mailto:contact@inovigroup.co.uk"
+                className="rounded-lg border border-line px-5 py-3 text-sm font-semibold text-text transition-colors hover:border-accent"
               >
                 Get in touch
               </a>
-              <Link
-                href="/about"
-                className="rounded-lg border border-line px-5 py-3 text-sm font-semibold text-text transition-colors hover:border-accent"
-              >
-                About INOVI
-              </Link>
             </div>
           </div>
         </Reveal>
