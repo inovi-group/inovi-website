@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
-  Github,
   PlayCircle,
   Sprout,
   FileCheck2,
@@ -122,20 +121,20 @@ export default function HomePage() {
           <Reveal delay={0.24}>
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <a
-                href="https://inovi-group.github.io/firma-spec/demo/"
+                href="https://www.isale-ts.uk"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
               >
-                <PlayCircle size={16} /> Launch the live demo
+                Request a demo <ArrowRight size={16} />
               </a>
               <a
-                href="https://github.com/inovi-group/firma-spec"
+                href="https://inovi-group.github.io/firma-spec/demo/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg border border-line bg-card px-5 py-3 text-sm font-semibold text-text transition-colors hover:border-accent"
               >
-                <Github size={16} /> Open-source spec
+                <PlayCircle size={16} /> Launch the live demo
               </a>
             </div>
           </Reveal>

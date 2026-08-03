@@ -6,10 +6,10 @@ import { Github, Menu, X } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
 const nav = [
-  { href: "/isale", label: "iSale" },
-  { href: "/agro", label: "AGRO" },
-  { href: "/firma", label: "FIRMA" },
-  { href: "/about", label: "About" },
+  { href: "https://www.isale-ts.uk", label: "iSale", external: true },
+  { href: "/agro", label: "AGRO", external: false },
+  { href: "/firma", label: "FIRMA", external: false },
+  { href: "/about", label: "About", external: false },
 ];
 
 export function Header() {
@@ -26,15 +26,27 @@ export function Header() {
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-sm text-muted transition-colors hover:text-text"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {nav.map((item) =>
+            item.external ? (
+              <a
+                key={item.href}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-muted transition-colors hover:text-text"
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-sm text-muted transition-colors hover:text-text"
+              >
+                {item.label}
+              </Link>
+            )
+          )}
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
@@ -67,16 +79,29 @@ export function Header() {
 
       {open && (
         <nav className="border-t border-line bg-ink px-5 pb-5 pt-3 md:hidden">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className="block py-2.5 text-sm text-muted hover:text-text"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {nav.map((item) =>
+            item.external ? (
+              <a
+                key={item.href}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="block py-2.5 text-sm text-muted hover:text-text"
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className="block py-2.5 text-sm text-muted hover:text-text"
+              >
+                {item.label}
+              </Link>
+            )
+          )}
           <div className="mt-3 flex items-center gap-3">
             <ThemeToggle />
             <a

@@ -77,7 +77,9 @@ export default function ISalePage() {
           </Reveal>
           <Reveal delay={0.24}>
             <a
-              href="mailto:contact@inovigroup.co.uk?subject=iSale%20demo%20request"
+              href="https://www.isale-ts.uk"
+              target="_blank"
+              rel="noopener noreferrer"
               className="mt-9 inline-flex items-center gap-2 rounded-lg bg-isale px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
             >
               Request a demo <ArrowRight size={16} />
@@ -155,7 +157,9 @@ export default function ISalePage() {
               your open deals from day one.
             </p>
             <a
-              href="mailto:contact@inovigroup.co.uk?subject=iSale%20demo%20request"
+              href="https://www.isale-ts.uk"
+              target="_blank"
+              rel="noopener noreferrer"
               className="mt-8 inline-flex items-center gap-2 rounded-lg bg-isale px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
             >
               Request a demo <ArrowRight size={16} />
