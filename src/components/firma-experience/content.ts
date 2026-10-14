@@ -26,7 +26,24 @@ const ACTOR = "f1a7e0c2-5d3b-4e8a-9c61-2b7d4e9a0f13";
 // Someone changes a sealed score after the fact: its recomputed hash no longer matches the next link.
 const TAMPER = 1;
 
-export type StoryData = { scores: Score[]; reality: Reality; decision: Decision; records: ChainRecord[]; tamper: Tamper };
+// Month end: the story's deal is one of a month's pipeline; every deal is checked the same way and the
+// results are gathered into one sealed report. Generic deals, no names or amounts.
+export type MonthDeal = { label: string; main: boolean; result: Outcome | "open"; levels: number[]; right: boolean[] | null; seals: number };
+export type ProviderLine = { name: string; right: number; total: number; verdict: string; tone: "ok" | "bad" | "mixed" };
+export type Month = {
+  deals: MonthDeal[]; closed: number; open: number; matched: number; scored: number;
+  providers: ProviderLine[]; decisions: string[]; records: number; hash: string;
+};
+export type StoryData = { scores: Score[]; reality: Reality; decision: Decision; records: ChainRecord[]; tamper: Tamper; month: Month };
+
+export const MONTH_MAIN = 5; // the story's deal sits in the middle row of the month grid
+// The rest of the month for the "lost" story: [Provider A, Provider B, rep] win likelihoods and the result.
+// For the "won" story Provider A and B swap, so the month backs whichever provider called this deal.
+const OTHERS: [number[], Outcome | "open"][] = [
+  [[0.74, 0.66, 0.8], "won"], [[0.71, 0.22, 0.7], "lost"], [[0.62, 0.31, 0.4], "lost"], [[0.35, 0.72, 0.85], "won"],
+  [[0.8, 0.19, 0.75], "lost"], [[0.68, 0.41, 0.6], "won"], [[0.44, 0.26, 0.55], "lost"], [[0.77, 0.58, 0.65], "lost"],
+  [[0.58, 0.81, 0.7], "won"], [[0.7, 0.35, 0.8], "open"], [[0.3, 0.62, 0.5], "open"],
+];
 
 function chainFor(scores: Score[], outcome: Outcome): ChainRecord[] {
   const drafts = [
@@ -61,6 +78,7 @@ export function createStoryData(outcome: Outcome): StoryData {
     decision: { title: "", detail: "In your month-end report, with the evidence it was based on." },
     records: chainFor(scores, outcome),
     tamper: { index: TAMPER, title: "Provider A score (edited)", hash: "" },
+    month: { deals: [], closed: 0, open: 0, matched: 0, scored: 0, providers: [], decisions: [], records: 0, hash: "" },
   };
   applyOutcome(data, outcome);
   return data;
@@ -74,9 +92,52 @@ export function applyOutcome(d: StoryData, outcome: Outcome) {
   const forged = structuredClone(d.records[TAMPER].rec);
   forged.content.edited = true;
   d.tamper.hash = short(computeHash(forged));
+  Object.assign(d.month, monthFor(d, outcome));
 }
 
-// The story, one step per scene step (1–8): a big headline, what happens, and why it matters.
+function monthFor(d: StoryData, outcome: Outcome): Month {
+  const swap = outcome === "won";
+  const others = OTHERS.map(([l, result]) => ({ levels: swap ? [l[1], l[0], l[2]] : l, result }));
+  const main = { levels: d.scores.map((s) => s.level), result: outcome as Outcome | "open" };
+  const list = [...others.slice(0, MONTH_MAIN), main, ...others.slice(MONTH_MAIN)];
+  let n = 0;
+  const deals: MonthDeal[] = list.map((x, i) => {
+    const isMain = i === MONTH_MAIN;
+    const closed = x.result !== "open";
+    // a score called it when it leaned the way the deal went
+    const right = closed ? x.levels.map((v) => (v >= 0.5) === (x.result === "won")) : null;
+    return { label: isMain ? "THIS DEAL" : `DEAL ${String(++n).padStart(2, "0")}`, main: isMain, result: x.result, levels: x.levels, right, seals: closed ? 5 : 4 };
+  });
+  const closed = deals.filter((x) => x.right);
+  const rightOf = (k: number) => closed.filter((x) => x.right![k]).length;
+  const trusted = TRUSTED[outcome], other = TRUSTED[outcome === "won" ? "lost" : "won"];
+  const names = ["Provider A", "Provider B", "Reps' forecasts"];
+  const providers: ProviderLine[] = names.map((name, k) => ({
+    name, right: rightOf(k), total: closed.length,
+    ...(name === trusted ? { verdict: "TRUST", tone: "ok" as const }
+      : name === other ? { verdict: outcome === "won" ? "TOO PESSIMISTIC" : "OVERCONFIDENT", tone: "bad" as const }
+      : { verdict: "MIXED", tone: "mixed" as const }),
+  }));
+  const decisions = [
+    `Trust ${trusted} on late-stage deals.`,
+    `Treat ${other}'s scores as unconfirmed.`,
+    `Ask reps to re-forecast deals ${trusted} flags.`,
+  ];
+  const matched = providers.reduce((a, p) => a + p.right, 0);
+  const records = deals.reduce((a, x) => a + x.seals, 0);
+  // the report itself is a FIRMA record, chained after this deal's decision
+  const rec: FirmaRecord = {
+    firma_id: "00000000-0000-4000-8000-000000000007", record_type: "DR", version: "2.0.0", actor_id: ACTOR,
+    content: { kind: "month_end_report", deals: deals.length, closed: closed.length, scores_checked: closed.length * 3, matched, trust: trusted, decisions },
+    timestamp_utc: "2026-01-01T00:00:06Z", predecessor_hash: d.records[d.records.length - 1].rec.record_hash ?? null,
+  };
+  return {
+    deals, closed: closed.length, open: deals.length - closed.length, matched, scored: closed.length * 3,
+    providers, decisions, records, hash: short(computeHash(rec)),
+  };
+}
+
+// The story, one step per scene step (1–10): a big headline, what happens, and why it matters.
 export const STEPS: [idx: string, headline: string, what: string, why: string][] = [
   ["01 · A score lands", "A score lands. Firma seals it.",
     "A revenue tool or your CRM puts a risk score on the deal. The moment it arrives, Firma takes a snapshot and seals it into a tamper-proof record beside the deal.",
@@ -93,11 +154,17 @@ export const STEPS: [idx: string, headline: string, what: string, why: string][]
   ["02 · Month end", "Firma checks every score against reality.",
     "Each sealed score is compared with what really happened. Which source called it, which was overconfident, which was only ever a default.",
     "Trust is earned on outcomes, tested on the record, not on a vendor's claims or anyone's memory."],
+  ["02 · The whole month", "Every deal, checked the same way.",
+    "Zoom out and this deal is one of many. Every deal in the month's pipeline has its own scores, its own outcome and its own sealed chain.",
+    "One deal is an anecdote. A whole month of checked deals is evidence."],
+  ["03 · The report", "It all goes into one report.",
+    "At month end, every checked deal is gathered into a single report, and the report is sealed into the record like everything else.",
+    "One place to look, instead of a dozen dashboards that disagree."],
   ["03 · Decisions", "It tells you which scores to trust.",
-    "Your month-end report makes a clear call, such as trusting one provider on late-stage deals, with the evidence behind it. The decision is sealed as the next link.",
+    "The report opens on one clean page: how many scores matched reality, which providers to trust, and the decisions to take. Each decision is sealed as the next link.",
     "You act on the number that has been right, and you can show why you chose it."],
   ["03 · Verify", "Anyone can check it.",
-    "Each record carries a SHA3-512 hash of its contents and points to the hash of the one before. Recompute them and follow the links back to the first record.",
+    "Open any deal behind the report. Each record carries a SHA3-512 hash of its contents and points to the hash of the one before. Recompute them and follow the links back to the first record.",
     "Integrity is a property you verify yourself, not a claim you have to trust."],
   ["Can't be quietly rewritten", "Change a sealed score and the chain shows it.",
     "Edit any record after the fact and its hash changes. The next record still points to the old one, so the link breaks and the seal cracks.",

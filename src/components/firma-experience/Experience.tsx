@@ -160,9 +160,13 @@ export function Experience() {
       setOutcome(o);
       setParam("outcome", o);
     }
-    if (stepFn.current() >= LANDS_AT) sceneApi.current?.replayOutcome();
-    else if (goFn.current) goFn.current(OUTCOME_BEAT);
+    // replay in place where the deal is on screen; from the month end, go back to the deal first
+    const here = stepFn.current();
+    if (here >= LANDS_AT && !sceneApi.current?.inMonth()) { sceneApi.current?.replayOutcome(); return; }
+    if (goFn.current) goFn.current(OUTCOME_BEAT);
     else rootRef.current?.querySelectorAll(".flow-step")[OUTCOME_BEAT]?.scrollIntoView({ behavior: reduceMotion.current?.matches ? "auto" : "smooth", block: "center" });
+    // coming back from past the hit, it would not fire again by itself: play it once the deal is back in view
+    if (here >= LANDS_AT) window.setTimeout(() => sceneApi.current?.replayOutcome(), reduceMotion.current?.matches ? 50 : 1300);
   }
 
   const mode = cfg?.scroll ?? "a";

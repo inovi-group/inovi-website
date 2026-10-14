@@ -33,6 +33,7 @@ import {
   type WebGLRenderer,
 } from "three";
 import type { StoryData, Score, Reality, Decision, ChainRecord } from "./content";
+import { createMonth } from "./monthScene";
 
 export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 export const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
@@ -374,7 +375,10 @@ function drawShield(cv: Cv) {
  * Scroll steps: 0 landing (scene in the background), 1–3 a provider score lands and is sealed,
  * 4 the outcome arrives and is sealed, 5 Firma compares, 6 the decision is sealed, 7 verify, 8 rewrite attempt.
  */
-export function createCheck({ root, camera, gl, data, fonts, setBackdrop: backdrop }: CheckOptions) {
+export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop: backdrop }: CheckOptions) {
+  // the deal composition lives in its own group, so the month-end pull-back can shrink it into the month
+  const root = new Group();
+  stage.add(root);
   const { scores, reality, decision, records, tamper } = data;
   if (fonts) Object.assign(F, fonts);
   const n = scores.length;
@@ -662,6 +666,7 @@ export function createCheck({ root, camera, gl, data, fonts, setBackdrop: backdr
   root.add(vault);
 
   const redraw = () => {
+    month.redraw();
     drawWax(waxCv); waxTex.needsUpdate = true; // the seal's letter needs the web font too
     layers.forEach((l) => {
       drawLayer(l.cvA, l.s, l.i, false); l.plain.material.map!.needsUpdate = true;
@@ -683,6 +688,9 @@ export function createCheck({ root, camera, gl, data, fonts, setBackdrop: backdr
     }));
     recs.forEach((rc) => { drawToken(rc.tokCv, rc.r.token); rc.token.material.map!.needsUpdate = true; });
   };
+  // month end: the rest of the month's deals, and the report they are gathered into
+  let monthStep = 0;
+  const month = createMonth({ parent: stage, deal: root, data, fonts: F, texOf, makeSeal: wax, glass: xrayMaterial });
   redraw();
   let alive = true;
   Promise.all([document.fonts?.load(`700 150px ${F.sans}`), document.fonts?.load(`600 38px ${F.mono}`)]).catch(() => {}).then(() => alive && redraw());
@@ -824,7 +832,11 @@ export function createCheck({ root, camera, gl, data, fonts, setBackdrop: backdr
   const WHITE = new Color("#ffffff"), WIN = new Color("#7ef0a8");
 
   const tmp = new Vector3(), tmpC = new Color();
-  function update({ step, t, dt, still }: FrameCtx) {
+  // Story steps → the deal's own timeline. Steps 6–8 are the month end (the deal waits at 5, then its
+  // decision is sealed out of sight while the report opens); verify and the rewrite attempt follow at 9–10.
+  const dealStep = (s: number) => (s <= 5 ? s : s < 7.2 ? 5 : s < 8 ? 5 + (s - 7.2) / 0.8 : s - 2);
+  function update({ step: s, t, dt, still }: FrameCtx) {
+    const step = dealStep(s);
     const P = LAYOUTS[layoutId][view.wide ? "wide" : "narrow"];
     const BS = P.box, BC = P.bc;
     const D = DIMS[P.style];
@@ -858,10 +870,10 @@ export function createCheck({ root, camera, gl, data, fonts, setBackdrop: backdr
     divider.visible = !!P.divider;
     divider.material.opacity = 0.7 * bg;
 
-    root.rotation.y = still ? 0 : Math.sin(t * 0.25) * 0.05;
-    root.position.y = still ? 0 : Math.sin(t * 0.6) * 0.04;
-    root.position.x = jolt * Math.sin(k * 70);
-    root.position.y += jolt * 0.6 * Math.cos(k * 55);
+    stage.rotation.y = still ? 0 : Math.sin(t * 0.25) * 0.05;
+    stage.position.y = still ? 0 : Math.sin(t * 0.6) * 0.04;
+    stage.position.x = jolt * Math.sin(k * 70);
+    stage.position.y += jolt * 0.6 * Math.cos(k * 55);
 
     // box
     shell.scale.setScalar(BS);
@@ -1111,6 +1123,8 @@ export function createCheck({ root, camera, gl, data, fonts, setBackdrop: backdr
     tmpC.copy(GOLD).lerp(OK, verifiedAt(recs.length - 1)).lerp(BAD, tp);
     vault.material.color.copy(tmpC);
     vault.material.opacity = 0.25 + 0.45 * Math.max(verifiedAt(recs.length - 1), tp);
+    monthStep = s;
+    month.update({ s, t, still, wide: view.wide, bounds: P.bounds });
   }
   return {
     update,
@@ -1120,6 +1134,8 @@ export function createCheck({ root, camera, gl, data, fonts, setBackdrop: backdr
     setLayout(id: number) { if (LAYOUTS[id]) layoutId = id; },
     // a new outcome rewrites the faces (the data objects were updated in place by the page)
     setOutcome() { redraw(); },
+    // the month end replays poorly out of sight: callers scroll back to the deal instead
+    inMonth: () => monthStep > 5.5 && monthStep < 8.5,
     // play the impact again where you are; the judging follows it
     replayOutcome() {
       const now = performance.now() / 1000;
@@ -1128,13 +1144,13 @@ export function createCheck({ root, camera, gl, data, fonts, setBackdrop: backdr
     },
     dispose() {
       alive = false;
-      root.traverse((o: Object3D) => {
+      stage.traverse((o: Object3D) => {
         const m = o as Mesh;
         m.geometry?.dispose();
         (Array.isArray(m.material) ? m.material : m.material ? [m.material] : []).forEach((x) => x.dispose());
       });
       textures.forEach((t) => t.dispose());
-      root.clear();
+      stage.clear();
     },
   };
 }
