@@ -24,7 +24,7 @@ import { heroTune as T, LIMITS } from "./heroTuning";
  * out of that point and fan out as they fall, following the widening cone of light toward the middle bottom.
  * Behind the beam, slow aurora ribbons; in and around it, fine stardust catching the light. Everything is
  * drawn crisp (additive shaders, no blur pass). Envelopes inside the beam are lit by it.
- * One envelope is the featured deal: when the visitor starts scrolling (story step 0 → 0.45) it is picked out
+ * When the visitor starts scrolling (story step 0 → 0.45), the best placed falling envelope is picked out
  * and carried to the deal's place, where the deal's own envelope takes over (and is scanned); the beam, aurora,
  * dust and the rest of the stream fade. Reduced motion: a still beam and aurora, no moving dust or envelopes.
  */
@@ -34,7 +34,7 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 type Emblem = { g: Group; set(lock: number, ver: number, brk: number, alpha: number): void };
 type Bounds = { cx: number; cy: number; hw: number; hh: number };
-type Item = { env: ReturnType<typeof makeEnvelope>; jit: number; lat: number; zr: number; sr: number; ph: number };
+type Item = { env: ReturnType<typeof makeEnvelope>; jit: number; lat: number; zr: number; sr: number; ph: number; off: number; u: number; ends: number; size: number };
 
 export const PICK_END = 0.45; // by here the featured envelope has arrived and the deal's own envelope takes over
 
@@ -72,10 +72,10 @@ const beamMaterial = (core: boolean) => new ShaderMaterial({
 // Aurora, inside the beam only: slow flowing ribbons of colour running down the cone, drawn on the beam's own
 // plane and masked by the cone's edge, so none of it spreads across the rest of the background.
 const auroraMaterial = () => new ShaderMaterial({
-  uniforms: { uTime: { value: 0 }, uAlpha: { value: 1 }, uW0: { value: 0.04 }, uIntensity: { value: 0.45 }, uMix: { value: new Vector3(1, 1, 0.5) } },
+  uniforms: { uTime: { value: 0 }, uAlpha: { value: 1 }, uW0: { value: 0.04 }, uIntensity: { value: 0.45 }, uMix: { value: new Vector3(1, 1, 0.5) }, uCount: { value: 3 }, uWidth: { value: 0.17 } },
   vertexShader: VERT,
   fragmentShader: /* glsl */ `
-    uniform float uTime, uAlpha, uW0, uIntensity; uniform vec3 uMix; varying vec2 vUv;
+    uniform float uTime, uAlpha, uW0, uIntensity, uCount, uWidth; uniform vec3 uMix; varying vec2 vUv;
     ${NOISE}
     float ribbon(float xn, float y, float c, float w, float sp, float f) {
       float cx = c + 0.18 * sin(y * f + uTime * sp) + 0.14 * (fbm(vec2(y * 2.0 - uTime * sp * 0.6, c * 9.0)) - 0.5);
@@ -87,9 +87,17 @@ const auroraMaterial = () => new ShaderMaterial({
       float y = 1.0 - vUv.y, x = (vUv.x - 0.5) * 2.0;
       float half_ = mix(uW0, 1.0, y), xn = x / max(half_, 0.02); // -1 … 1 across the cone at this height
       float cone = 1.0 - smoothstep(0.6, 0.95, abs(xn));
-      vec3 c = vec3(0.16, 0.86, 0.66) * ribbon(xn, y, -0.35, 0.18, 0.2, 3.1) * uMix.x
-             + vec3(0.42, 0.42, 0.95) * ribbon(xn, y, 0.25, 0.2, 0.14, 2.3) * uMix.y
-             + vec3(0.9, 0.7, 0.32) * ribbon(xn, y, 0.0, 0.1, 0.18, 4.0) * uMix.z;
+      // uCount ribbons spaced across the cone; their centres stay far enough in that a ribbon of this width
+      // (plus its sway) never reaches the beam's edge. Colours cycle teal, violet, gold.
+      vec3 c = vec3(0.0);
+      float span = max(0.0, 0.62 - uWidth * 1.2 - 0.18);
+      for (int i = 0; i < 8; i++) {
+        if (float(i) >= uCount) break;
+        float fi = float(i), m = mod(fi, 3.0);
+        float cx = uCount < 1.5 ? 0.0 : -span + 2.0 * span * fi / (uCount - 1.0);
+        vec3 col = m < 0.5 ? vec3(0.16, 0.86, 0.66) * uMix.x : m < 1.5 ? vec3(0.42, 0.42, 0.95) * uMix.y : vec3(0.9, 0.7, 0.32) * uMix.z;
+        c += col * ribbon(xn, y, cx, uWidth, 0.14 + 0.03 * m, 2.3 + 0.8 * fi);
+      }
       float a = uIntensity * cone * smoothstep(0.03, 0.18, y) * (1.0 - smoothstep(0.75, 1.0, y)) * uAlpha;
       gl_FragColor = vec4(c * a, a * max(c.r, max(c.g, c.b)));
     }`,
@@ -118,15 +126,14 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
   const beams = [false, true].map((core) => { const m = new Mesh(new PlaneGeometry(1, 1), beamMaterial(core)); m.renderOrder = -2; return m; });
   hero.add(aurora, ...beams);
 
-  // item 0 is the featured deal; it holds its place in the stream so it is on screen when the scroll begins.
   // Each item keeps its own random draws (jitter, side, depth, size); the tuning ranges map them every frame.
-  const items: Item[] = Array.from({ length: LIMITS.envelopes }, (_, k) => {
+  // The featured deal is not a fixed item: on scroll, whichever falling envelope is best placed is picked.
+  const items: Item[] = Array.from({ length: LIMITS.envelopes }, () => {
     const env = makeEnvelope(face, makeSeal());
     hero.add(env.g);
-    return k === 0
-      ? { env, jit: 0, lat: 0.15, zr: 0.85, sr: 1, ph: 1.3 }
-      : { env, jit: rnd() * 0.04, lat: rnd() * 2 - 1, zr: rnd(), sr: rnd(), ph: rnd() * 6.28 };
+    return { env, jit: rnd() * 0.04, lat: rnd() * 2 - 1, zr: rnd(), sr: rnd(), ph: rnd() * 6.28, off: 0, u: 0, ends: 0, size: 0 };
   });
+  let picked = -1, pickedU = 0;
 
   // stardust: fine particles drifting down through and around the cone
   const dust = Array.from({ length: LIMITS.dust }, () => ({ u: rnd(), lat: (rnd() * 2 - 1) * 0.95, z: lerp(-2.5, 1.2, rnd()), sp: lerp(0.4, 1.2, rnd()), ph: rnd() * 6.28, mag: lerp(0.3, 1, rnd()) }));
@@ -199,18 +206,22 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
     const au = (aurora.material as ShaderMaterial).uniforms;
     au.uTime.value = auroraClock; au.uAlpha.value = fade; au.uW0.value = W0 / aMax;
     au.uIntensity.value = T.auroraIntensity; au.uMix.value.set(T.auroraTeal, T.auroraViolet, T.auroraGold);
+    au.uCount.value = T.auroraRibbons; au.uWidth.value = T.auroraWidth;
 
     // ---- envelopes: out of the source, fanning out with the cone ----
     const count = Math.min(LIMITS.envelopes, Math.max(1, Math.round(T.envelopeCount * (wide ? 1 : 0.56))));
+    const uEnd = T.fadeStart + T.fadeLength;
+    const flowU = (it: Item, k: number) => {
+      const u0 = (k / count + it.jit) * uEnd + it.off;
+      return still ? ((u0 % uEnd) + uEnd) % uEnd : (((u0 + t * T.fallSpeed) % uEnd) + uEnd) % uEnd;
+    };
+    // the stream: every envelope falls along the beam (u: distance along the path in beam lengths; they keep
+    // falling past the beam's end until they have faded)
     items.forEach((it, k) => {
-      const featured = k === 0;
       if (k >= count) { it.env.setOpacity(0); return; }
-      // u: distance along the path in beam lengths; envelopes keep falling past the beam until they have faded
-      const uEnd = T.fadeStart + T.fadeLength;
-      const u0 = featured ? 0.5 : (k / count + it.jit) * uEnd;
-      const u = featured || still ? u0 : (u0 + t * T.fallSpeed) % uEnd;
+      const u = k === picked ? pickedU : flowU(it, k); // the picked one stops where it was taken from the stream
+      it.u = u;
       const along = lerp(0.02, 0.98, u) * L;
-      // never past half the cone's width, so even the largest envelope stays inside the light
       pos.copy(E).addScaledVector(dir, along).addScaledVector(perp, it.lat * halfAt(u) * T.emitterSpread);
       pos.z = lerp(E.z, lerp(T.depthFar, T.depthNear, it.zr), Math.min(1, u * 1.6)); // close together at the source, a little depth as they fall
       const sway = still ? 0 : T.rotation;
@@ -218,24 +229,54 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
       g.position.copy(pos);
       g.position.y += Math.sin(t * 0.4 + it.ph) * 0.05 * sway * u;
       g.rotation.set(0.18 + Math.sin(t * 0.21 + it.ph) * 0.12 * sway, Math.sin(t * 0.17 + it.ph * 1.7) * 0.4 * sway, tilt * 0.35 + Math.sin(t * 0.13 + it.ph) * 0.08 * sway);
-      const size = featured ? 0.62 : lerp(T.sizeMin, T.sizeMax, it.sr);
-      g.scale.setScalar(size * bs * lerp(0.35, 1, Math.min(1, u * 1.4))); // small as they emerge
-      // lit by the beam: brighter near its axis
+      it.size = lerp(T.sizeMin, T.sizeMax, it.sr) * lerp(0.35, 1, Math.min(1, u * 1.4)); // small as they emerge
+      g.scale.setScalar(it.size * bs);
       // lit by the beam (brighter near its axis), less so once past its end
       const pastEnd = clamp01((u - 1.25) / 0.3);
       it.env.setLight((1 - Math.min(1, Math.abs(it.lat) * T.emitterSpread * 1.1)) * (1 - pastEnd));
-      const ends = clamp01(u / 0.07) * (1 - clamp01((u - T.fadeStart) / T.fadeLength));
-      if (featured) {
-        if (!still && s > 0) {
+      it.ends = clamp01(u / 0.07) * (1 - clamp01((u - T.fadeStart) / T.fadeLength));
+    });
+
+    // ---- the pick: as the scroll begins, the best placed falling envelope is taken out of the stream ----
+    if (s <= 0.001 && picked >= 0) {
+      // back at the top: it rejoins the stream where it stands, and carries on falling from there
+      const it = items[picked];
+      it.off = 0;
+      it.off = pickedU - flowU(it, picked);
+      picked = -1;
+    }
+    if (s > 0.001 && picked < 0) {
+      // closest on screen to the scan position, fully visible, not small, and not about to fade
+      ndc.copy(pickAt).project(camera);
+      const px = ndc.x, py = ndc.y;
+      let best = -1, bestScore = Infinity;
+      items.forEach((it, k) => {
+        if (k >= count || it.ends < 0.98 || it.u > T.fadeStart - 0.12 || it.u < 0.2) return;
+        ndc.copy(it.env.g.position).project(camera);
+        if (Math.abs(ndc.x) > 0.95 || Math.abs(ndc.y) > 0.92) return;
+        const score = Math.hypot(ndc.x - px, ndc.y - py) - 0.4 * it.size;
+        if (score < bestScore) { bestScore = score; best = k; }
+      });
+      if (best < 0) best = items.slice(0, count).reduce((b, it, k) => (it.ends > items[b].ends ? k : b), 0);
+      picked = best; pickedU = items[best].u;
+    }
+
+    items.forEach((it, k) => {
+      if (k >= count) return;
+      const g = it.env.g;
+      if (k === picked) {
+        // pulled out and brought forward to the scan position, facing the viewer; the deal's own envelope
+        // takes over from here (and is scanned)
+        if (!still) {
           g.position.lerp(pickAt, pick);
           g.rotation.x *= 1 - pick; g.rotation.y *= 1 - pick; g.rotation.z *= 1 - pick;
-          g.scale.setScalar(lerp(g.scale.x / bs, T.pickSize, pick) * bs);
+          g.scale.setScalar(lerp(it.size, T.pickSize, pick) * bs);
           it.env.setLight(lerp(1, 0, pick));
         }
-        it.env.setOpacity(still ? fade : s >= PICK_END ? 0 : 1);
+        it.env.setOpacity(still ? it.ends * fade : s >= PICK_END ? 0 : it.ends);
       } else {
         g.position.z -= 3 * (1 - fade);
-        it.env.setOpacity(ends * fade);
+        it.env.setOpacity(it.ends * fade);
       }
     });
 

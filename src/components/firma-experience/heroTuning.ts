@@ -22,6 +22,8 @@ export const HERO_DEFAULTS = {
   auroraIntensity: 0.45,
   auroraSpeed: 0.25,     // how fast the ribbons flow (0 = still)
   auroraLength: 1.25,    // how far down the beam the ribbons reach, in beam lengths (independent of the beam)
+  auroraRibbons: 3,      // how many ribbons flow down the beam
+  auroraWidth: 0.17,     // width of each ribbon, as a share of the beam's width (they stay inside it)
   auroraTeal: 1.0,       // colour mix: weight of each ribbon
   auroraViolet: 1.0,
   auroraGold: 0.5,
@@ -68,6 +70,8 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
     { key: "auroraIntensity", label: "Intensity", min: 0, max: 1.5, step: 0.01 },
     { key: "auroraSpeed", label: "Speed", min: 0, max: 3, step: 0.01 },
     { key: "auroraLength", label: "Length (down the beam)", min: 0.1, max: 2.5, step: 0.01 },
+    { key: "auroraRibbons", label: "Ribbons (count)", min: 1, max: 8, step: 1 },
+    { key: "auroraWidth", label: "Ribbon width", min: 0.03, max: 0.45, step: 0.005 },
     { key: "auroraTeal", label: "Teal", min: 0, max: 2, step: 0.01 },
     { key: "auroraViolet", label: "Violet", min: 0, max: 2, step: 0.01 },
     { key: "auroraGold", label: "Gold", min: 0, max: 2, step: 0.01 },
