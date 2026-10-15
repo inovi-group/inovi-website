@@ -87,9 +87,9 @@ const auroraMaterial = () => new ShaderMaterial({
       float y = 1.0 - vUv.y, x = (vUv.x - 0.5) * 2.0;
       float half_ = mix(uW0, 1.0, y), xn = x / max(half_, 0.02); // -1 … 1 across the cone at this height
       float cone = 1.0 - smoothstep(0.6, 0.95, abs(xn));
-      vec3 c = vec3(0.16, 0.86, 0.66) * ribbon(xn, y, -0.35, 0.18, 0.05, 3.1) * uMix.x
-             + vec3(0.42, 0.42, 0.95) * ribbon(xn, y, 0.25, 0.2, 0.035, 2.3) * uMix.y
-             + vec3(0.9, 0.7, 0.32) * ribbon(xn, y, 0.0, 0.1, 0.045, 4.0) * uMix.z;
+      vec3 c = vec3(0.16, 0.86, 0.66) * ribbon(xn, y, -0.35, 0.18, 0.2, 3.1) * uMix.x
+             + vec3(0.42, 0.42, 0.95) * ribbon(xn, y, 0.25, 0.2, 0.14, 2.3) * uMix.y
+             + vec3(0.9, 0.7, 0.32) * ribbon(xn, y, 0.0, 0.1, 0.18, 4.0) * uMix.z;
       float a = uIntensity * cone * smoothstep(0.03, 0.18, y) * (1.0 - smoothstep(0.75, 1.0, y)) * uAlpha;
       gl_FragColor = vec4(c * a, a * max(c.r, max(c.g, c.b)));
     }`,
@@ -142,6 +142,8 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
   const warm = new Color("#ffe2a8");
 
   const ndc = new Vector3(), pickAt = new Vector3(), shift = new Vector3();
+  // the aurora's own clock: the speed slider changes how fast it advances, so changing it never jumps the ribbons
+  let auroraClock = 0, lastT = 0;
   function update({ s, t, still, wide, bounds: B, bc, bs, camera }: { s: number; t: number; still: boolean; wide: boolean; bounds: Bounds; bc: Vector3; bs: number; camera: PerspectiveCamera }) {
     // ---- where the featured envelope is picked and scanned: a place on screen (tunable), not the story's spot.
     // The whole deal view is shifted and scaled there for the scan, then glides back as the story begins.
@@ -187,12 +189,15 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
     });
     (beams[0].material as ShaderMaterial).uniforms.uColor.value.set(T.beamColor);
 
-    // ---- aurora: on the beam's plane, inside the cone ----
-    aurora.position.copy(beams[0].position).setZ(beams[0].position.z + 0.01);
+    // ---- aurora: inside the cone, on its own plane along the same axis, as far down as its length says ----
+    auroraClock += Math.max(0, Math.min(0.1, t - lastT)) * T.auroraSpeed;
+    lastT = t;
+    const aLen = T.auroraLength, aMax = W0 + grow * aLen;
+    aurora.position.copy(E).addScaledVector(dir, (L * aLen) / 2).setZ(E.z + 0.01);
     aurora.rotation.copy(beams[0].rotation);
-    aurora.scale.copy(beams[0].scale);
+    aurora.scale.set(aMax * 2, L * aLen, 1);
     const au = (aurora.material as ShaderMaterial).uniforms;
-    au.uTime.value = t * T.auroraSpeed; au.uAlpha.value = fade; au.uW0.value = W0 / Wmax;
+    au.uTime.value = auroraClock; au.uAlpha.value = fade; au.uW0.value = W0 / aMax;
     au.uIntensity.value = T.auroraIntensity; au.uMix.value.set(T.auroraTeal, T.auroraViolet, T.auroraGold);
 
     // ---- envelopes: out of the source, fanning out with the cone ----
@@ -200,8 +205,10 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
     items.forEach((it, k) => {
       const featured = k === 0;
       if (k >= count) { it.env.setOpacity(0); return; }
-      const u0 = featured ? 0.5 : k / count + it.jit;
-      const u = featured || still ? u0 : (u0 + t * T.fallSpeed) % 1;
+      // u: distance along the path in beam lengths; envelopes keep falling past the beam until they have faded
+      const uEnd = T.fadeStart + T.fadeLength;
+      const u0 = featured ? 0.5 : (k / count + it.jit) * uEnd;
+      const u = featured || still ? u0 : (u0 + t * T.fallSpeed) % uEnd;
       const along = lerp(0.02, 0.98, u) * L;
       // never past half the cone's width, so even the largest envelope stays inside the light
       pos.copy(E).addScaledVector(dir, along).addScaledVector(perp, it.lat * halfAt(u) * T.emitterSpread);
@@ -214,8 +221,10 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
       const size = featured ? 0.62 : lerp(T.sizeMin, T.sizeMax, it.sr);
       g.scale.setScalar(size * bs * lerp(0.35, 1, Math.min(1, u * 1.4))); // small as they emerge
       // lit by the beam: brighter near its axis
-      it.env.setLight(1 - Math.min(1, Math.abs(it.lat) * T.emitterSpread * 1.1));
-      const ends = clamp01(u / 0.07) * clamp01((1 - u) / 0.1);
+      // lit by the beam (brighter near its axis), less so once past its end
+      const pastEnd = clamp01((u - 1.25) / 0.3);
+      it.env.setLight((1 - Math.min(1, Math.abs(it.lat) * T.emitterSpread * 1.1)) * (1 - pastEnd));
+      const ends = clamp01(u / 0.07) * (1 - clamp01((u - T.fadeStart) / T.fadeLength));
       if (featured) {
         if (!still && s > 0) {
           g.position.lerp(pickAt, pick);

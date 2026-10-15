@@ -20,7 +20,8 @@ export const HERO_DEFAULTS = {
   coreGlow: 0.5,         // the hot spot at the source
   // aurora, inside the beam
   auroraIntensity: 0.45,
-  auroraSpeed: 1.0,
+  auroraSpeed: 0.25,     // how fast the ribbons flow (0 = still)
+  auroraLength: 1.25,    // how far down the beam the ribbons reach, in beam lengths (independent of the beam)
   auroraTeal: 1.0,       // colour mix: weight of each ribbon
   auroraViolet: 1.0,
   auroraGold: 0.5,
@@ -28,6 +29,8 @@ export const HERO_DEFAULTS = {
   emitterSpread: 0.45,   // how far envelopes fan out across the cone (1 = to its edges)
   envelopeCount: 16,     // emission rate: how many are in the stream at once (phones show about half)
   fallSpeed: 0.012,
+  fadeStart: 0.9,        // where along their path envelopes start to fade, in beam lengths (past 1 they leave the beam)
+  fadeLength: 0.1,       // how long the fade takes, in beam lengths
   sizeMin: 0.3,
   sizeMax: 0.6,
   depthNear: 0.9,        // depth range the stream spreads over as it falls
@@ -63,7 +66,8 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
   ] },
   { group: "Aurora", items: [
     { key: "auroraIntensity", label: "Intensity", min: 0, max: 1.5, step: 0.01 },
-    { key: "auroraSpeed", label: "Speed", min: 0, max: 4, step: 0.05 },
+    { key: "auroraSpeed", label: "Speed", min: 0, max: 3, step: 0.01 },
+    { key: "auroraLength", label: "Length (down the beam)", min: 0.1, max: 2.5, step: 0.01 },
     { key: "auroraTeal", label: "Teal", min: 0, max: 2, step: 0.01 },
     { key: "auroraViolet", label: "Violet", min: 0, max: 2, step: 0.01 },
     { key: "auroraGold", label: "Gold", min: 0, max: 2, step: 0.01 },
@@ -72,6 +76,8 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
     { key: "emitterSpread", label: "Emitter spread", min: 0, max: 1, step: 0.01 },
     { key: "envelopeCount", label: "Emission rate (count)", min: 1, max: 32, step: 1 },
     { key: "fallSpeed", label: "Fall speed", min: 0, max: 0.06, step: 0.001 },
+    { key: "fadeStart", label: "Fade start (along path)", min: 0.1, max: 2.5, step: 0.01 },
+    { key: "fadeLength", label: "Fade length", min: 0.02, max: 1.5, step: 0.01 },
     { key: "sizeMin", label: "Size min", min: 0.1, max: 1.2, step: 0.01 },
     { key: "sizeMax", label: "Size max", min: 0.1, max: 1.5, step: 0.01 },
     { key: "depthNear", label: "Depth near", min: -3, max: 3, step: 0.05 },
