@@ -14,6 +14,7 @@ import {
   PointsMaterial,
   SRGBColorSpace,
   ShaderMaterial,
+  Vector2,
   Vector3,
   type Texture,
 } from "three";
@@ -128,15 +129,36 @@ function orbTexture() {
   const t = new CanvasTexture(cv); t.colorSpace = SRGBColorSpace;
   return t;
 }
-// the halo an envelope gives off as a light: bright at the centre, falling off softly
-function haloTexture() {
-  const cv = Object.assign(document.createElement("canvas"), { width: 128, height: 128 });
-  const c = cv.getContext("2d")!, g = c.createRadialGradient(64, 64, 0, 64, 64, 64);
-  g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.25, "rgba(255,255,255,0.45)"); g.addColorStop(0.6, "rgba(255,255,255,0.1)"); g.addColorStop(1, "rgba(255,255,255,0)");
-  c.fillStyle = g; c.fillRect(0, 0, 128, 128);
-  const t = new CanvasTexture(cv); t.colorSpace = SRGBColorSpace;
-  return t;
-}
+// The glow an envelope radiates, hugging its rectangular shape: a rounded rectangle with a soft falloff,
+// drawn on a plane a little larger than the envelope and turned with it.
+const rectGlowMaterial = () => new ShaderMaterial({
+  uniforms: { uHalf: { value: new Vector2(1.45, 0.95) }, uPlane: { value: new Vector2(4, 3) }, uFall: { value: 0.4 }, uColor: { value: new Color("#ffc561") }, uOpacity: { value: 0 } },
+  vertexShader: VERT,
+  fragmentShader: /* glsl */ `
+    uniform vec2 uHalf, uPlane; uniform float uFall, uOpacity; uniform vec3 uColor; varying vec2 vUv;
+    float sdRound(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
+    void main() {
+      vec2 p = (vUv - 0.5) * uPlane;
+      float d = sdRound(p, uHalf, 0.14);
+      float a = d < 0.0 ? 0.55 : exp(-d / max(uFall, 0.001)) * (1.0 - smoothstep(0.8, 1.0, d / (2.4 * uFall + 0.001)));
+      a *= uOpacity;
+      gl_FragColor = vec4(uColor * a, a);
+    }`,
+  transparent: true, depthWrite: false, blending: AdditiveBlending,
+});
+// An echo of the envelope: its face, crisp or softened (uBlur mixes in a pre-blurred copy), tinted and glowing.
+const echoMaterial = (sharp: Texture, soft: Texture) => new ShaderMaterial({
+  uniforms: { uSharp: { value: sharp }, uSoft: { value: soft }, uBlur: { value: 0.35 }, uOpacity: { value: 0 }, uGlow: { value: 0.4 } },
+  vertexShader: VERT,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D uSharp, uSoft; uniform float uBlur, uOpacity, uGlow; varying vec2 vUv;
+    void main() {
+      vec4 c = mix(texture2D(uSharp, vUv), texture2D(uSoft, vUv), uBlur);
+      vec3 col = c.rgb * (1.0 + uGlow) + vec3(1.0, 0.78, 0.38) * uGlow * 0.25;
+      gl_FragColor = vec4(col * uOpacity, uOpacity * c.a);
+    }`,
+  transparent: true, depthWrite: false, blending: AdditiveBlending,
+});
 
 function dotTexture() {
   const cv = Object.assign(document.createElement("canvas"), { width: 32, height: 32 });
@@ -189,14 +211,28 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
   const trail = new Points(trailGeo, trailMat);
   trail.renderOrder = -0.5;
   hero.add(trail);
-  // each envelope's halo, behind it
-  const haloTex = haloTexture(), haloGeo = new PlaneGeometry(1, 1);
-  const halos = items.map((it) => {
-    const m = new Mesh(haloGeo, new MeshBasicMaterial({ map: haloTex, color: "#ffc561", transparent: true, opacity: 0, depthWrite: false, blending: AdditiveBlending }));
+  // each envelope's glow: a child of the envelope, just behind it, so it turns with it
+  const glowGeo = new PlaneGeometry(1, 1);
+  const glows = items.map((it) => {
+    const m = new Mesh(glowGeo, rectGlowMaterial());
     m.renderOrder = -0.8;
-    hero.add(m);
+    m.position.z = -ENV.d / 2 - 0.01;
+    it.env.g.add(m);
     return m;
   });
+  // echoes: afterimages of each envelope, trailing behind it along its path
+  const softCv = document.createElement("canvas");
+  const softTex = new CanvasTexture(softCv);
+  softTex.colorSpace = SRGBColorSpace;
+  let faceVersion = -1;
+  const echoGeo = new PlaneGeometry(ENV.w, ENV.h);
+  const echoes = items.map(() => Array.from({ length: LIMITS.echoes }, () => {
+    const m = new Mesh(echoGeo, echoMaterial(face, softTex));
+    m.renderOrder = -0.6;
+    m.visible = false;
+    hero.add(m);
+    return m;
+  }));
   const gold = new Color("#ffcf6a"), back = new Vector3(), side = new Vector3(), tmpV = new Vector3();
 
   const E = new Vector3(), P1 = new Vector3(), dir = new Vector3(), perp = new Vector3(), pos = new Vector3(), mid = new Vector3();
@@ -336,16 +372,51 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
       }
     });
 
-    // ---- halos: each envelope as a small light ----
+    // ---- glow: each envelope radiates from its own rectangular edges ----
+    const fall = 0.12 + 0.55 * T.glowRadius, margin = 2.4 * fall; // e^-2.4: the glow has all but faded by here
     items.forEach((it, k) => {
-      const m = halos[k], mat = m.material as MeshBasicMaterial;
+      const m = glows[k], u = (m.material as ShaderMaterial).uniforms;
       const a0 = k < count && it.env.g.visible ? (it.env.box.material as MeshBasicMaterial[])[4].opacity : 0;
       const on = a0 * T.envelopeGlow * (k === picked ? 1 - pick : 1);
       m.visible = on > 0.005 && T.glowRadius > 0;
       if (!m.visible) return;
-      m.position.copy(it.env.g.position); m.position.z -= 0.05;
-      m.scale.setScalar(ENV_W * it.env.g.scale.x * T.glowRadius);
-      mat.opacity = Math.min(1, 0.55 * on);
+      const pw = ENV.w + 2 * margin, ph = ENV.h + 2 * margin;
+      m.scale.set(pw, ph, 1);
+      u.uPlane.value.set(pw, ph); u.uHalf.value.set(ENV.w / 2, ENV.h / 2); u.uFall.value = fall;
+      u.uOpacity.value = Math.min(1.5, 0.9 * on);
+    });
+
+    // ---- echoes: shrinking, fading afterimages behind each envelope; the gaps shrink too, so the wake closes ----
+    if (face.version !== faceVersion && (face.image as HTMLCanvasElement)?.width) {
+      faceVersion = face.version;
+      // a softened copy of the face: drawn small, then scaled back up
+      const src = face.image as HTMLCanvasElement, sm = document.createElement("canvas");
+      sm.width = Math.max(8, src.width >> 4); sm.height = Math.max(8, src.height >> 4);
+      sm.getContext("2d")!.drawImage(src, 0, 0, sm.width, sm.height);
+      softCv.width = src.width >> 1; softCv.height = src.height >> 1;
+      const sc = softCv.getContext("2d")!; sc.imageSmoothingQuality = "high"; sc.drawImage(sm, 0, 0, softCv.width, softCv.height);
+      softTex.needsUpdate = true;
+    }
+    const ne = Math.min(LIMITS.echoes, Math.round(T.echoCount));
+    back.copy(dir).negate();
+    items.forEach((it, k) => {
+      const g = it.env.g;
+      const a0 = k < count && g.visible ? (it.env.box.material as MeshBasicMaterial[])[4].opacity : 0;
+      const away = k === picked ? 1 - pick : 1;
+      let off = 0, sc = 1, op = 1;
+      echoes[k].forEach((m, i) => {
+        if (i >= ne || a0 * away < 0.01) { m.visible = false; return; }
+        off += T.echoSpacing * ENV.h * g.scale.x * sc; // each gap a little shorter than the last
+        sc *= T.echoShrink; op *= T.echoFalloff;
+        m.position.copy(g.position).addScaledVector(back, off);
+        m.position.z -= 0.03 * (i + 1);
+        m.rotation.copy(g.rotation);
+        m.scale.setScalar(g.scale.x * sc);
+        const u = (m.material as ShaderMaterial).uniforms;
+        u.uOpacity.value = op * a0 * away;
+        u.uGlow.value = T.echoGlow; u.uBlur.value = T.echoBlur;
+        m.visible = u.uOpacity.value > 0.004;
+      });
     });
 
     // ---- golden wake: behind each envelope (back up its path), a V that closes to the centre line quickly ----

@@ -48,14 +48,21 @@ export const HERO_DEFAULTS = {
   // golden wake behind each envelope: short, closing fast to the centre line behind it
   trailLength: 1.2,      // in envelope heights
   trailTaper: 4.0,       // how fast the wake closes toward the middle (higher = narrower sooner)
-  trailCount: 6,         // orbs per envelope (phones show about half)
+  trailCount: 0,         // orbs per envelope (off by default: the echoes are the wake now; phones show about half)
   trailSize: 0.17,       // soft, translucent glowing orbs (bokeh), not fine dust
   trailOpacity: 0.4,
   trailBrightness: 1.4,
   trailFade: 0.45,       // how quickly the wake fades along its length (lower = fades sooner)
-  envelopeGlow: 0.25,    // the gold as a light source: emission on top of what the beam lights
-  glowRadius: 1.4,       // the halo around each envelope, in envelope widths
+  envelopeGlow: 0.35,    // the gold as a light source: emission, and the glow radiating from its edges
+  glowRadius: 0.8,       // how far the glow reaches out from the envelope's edges
   lightCast: 0.6,        // how much each envelope lights up the stardust around it
+  // echoes: afterimages of the envelope trailing behind it, each smaller and fainter
+  echoCount: 3,
+  echoSpacing: 0.55,     // gap between echoes, in envelope heights (it shrinks with them, so the wake closes)
+  echoShrink: 0.8,       // size of each echo relative to the one before
+  echoFalloff: 0.5,      // opacity of each echo relative to the one before
+  echoGlow: 0.4,
+  echoBlur: 0.35,        // 0 = crisp afterimages, 1 = soft
   stampColor: "#8f1d2c", // Firma's wax seal, wherever it appears
   // stardust
   dustCount: 260,        // phones show about 40% of these
@@ -111,7 +118,15 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
     { key: "pickY", label: "Vertical (from top)", min: 0.2, max: 0.85, step: 0.005 },
     { key: "pickSize", label: "Size", min: 0.4, max: 2.5, step: 0.01 },
   ] },
-  { group: "Golden wake (per envelope)", items: [
+  { group: "Echo wake (afterimages)", items: [
+    { key: "echoCount", label: "Echoes", min: 0, max: 6, step: 1 },
+    { key: "echoSpacing", label: "Spacing", min: 0.05, max: 2, step: 0.01 },
+    { key: "echoShrink", label: "Shrink per echo", min: 0.4, max: 1, step: 0.01 },
+    { key: "echoFalloff", label: "Opacity falloff", min: 0.05, max: 0.95, step: 0.01 },
+    { key: "echoGlow", label: "Echo glow", min: 0, max: 2, step: 0.01 },
+    { key: "echoBlur", label: "Echo blur", min: 0, max: 1, step: 0.01 },
+  ] },
+  { group: "Orb wake (optional)", items: [
     { key: "trailLength", label: "Trail length", min: 0, max: 4, step: 0.05 },
     { key: "trailTaper", label: "Convergence / taper", min: 0, max: 12, step: 0.1 },
     { key: "trailCount", label: "Orbs per envelope", min: 0, max: 40, step: 1 },
@@ -122,7 +137,7 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
   ] },
   { group: "Gold glow", items: [
     { key: "envelopeGlow", label: "Envelope glow / emission", min: 0, max: 2, step: 0.01 },
-    { key: "glowRadius", label: "Glow radius (halo)", min: 0, max: 4, step: 0.05 },
+    { key: "glowRadius", label: "Glow radius", min: 0, max: 3, step: 0.02 },
     { key: "lightCast", label: "Light cast (on dust)", min: 0, max: 4, step: 0.05 },
   ] },
   { group: "Firma stamp", items: [
@@ -134,7 +149,7 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
     { key: "dustBrightness", label: "Brightness", min: 0, max: 4, step: 0.05 },
   ] },
 ];
-export const LIMITS = { envelopes: 32, dust: 800, trail: 40 }; // the most the scene allocates
+export const LIMITS = { envelopes: 32, dust: 800, trail: 40, echoes: 6 }; // the most the scene allocates
 
 // the live values the scene reads; the panel writes into this object
 export const heroTune: HeroTune = { ...HERO_DEFAULTS };
