@@ -34,7 +34,7 @@ import {
 } from "three";
 import type { StoryData, Score, Reality, Decision, ChainRecord } from "./content";
 import { createMonth } from "./monthScene";
-import { createHero } from "./heroScene";
+import { createHero, type Palette } from "./heroScene";
 
 export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 export const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
@@ -709,7 +709,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   let monthStep = 0;
   const month = createMonth({ parent: stage, deal: root, data, fonts: F, texOf, makeSeal: wax, glass: xrayMaterial });
   // hero: a network of cores behind the headline; the featured deal is one of them and comes forward
-  const hero = createHero({ parent: stage, deal: root });
+  const hero = createHero({ parent: stage, deal: root, gl });
   redraw();
   let alive = true;
   Promise.all([document.fonts?.load(`700 150px ${F.sans}`), document.fonts?.load(`600 38px ${F.mono}`)]).catch(() => {}).then(() => alive && redraw());
@@ -1151,7 +1151,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     const dz = P.zones.deal;
     month.update({ s, t, still, wide: view.wide, bounds: P.bounds, zone: { cx: dz.cx, cy: dz.cy, w: dz.w, h: dz.h } });
     const hh = heroDist * fov;
-    hero.update({ s, t, still, wide: view.wide, featured: P.bc, view: { cx: P.bounds.cx, cy: P.bounds.cy, hw: hh * view.aspect, hh } });
+    hero.update({ s, t, still, wide: view.wide, featured: P.bc, camera, view: { cx: P.bounds.cx, cy: P.bounds.cy, hw: hh * view.aspect, hh, dist: heroDist } });
   }
   return {
     update,
@@ -1159,6 +1159,8 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     setView(v: View) { Object.assign(view, v); },
     setTreatment(kind: string) { if (makers[kind]) treatment = kind; },
     setLayout(id: number) { if (LAYOUTS[id]) layoutId = id; },
+    // hero mesh colours: a blue/teal, b violet
+    setPalette(p: Palette) { hero.setPalette(p); },
     // a new outcome rewrites the faces (the data objects were updated in place by the page)
     setOutcome() { redraw(); },
     // the month end replays poorly out of sight: callers scroll back to the deal instead
