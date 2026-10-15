@@ -1,6 +1,6 @@
 import {
   type PerspectiveCamera,
-  type MeshBasicMaterial,
+  MeshBasicMaterial,
   AdditiveBlending,
   NormalBlending,
   BufferAttribute,
@@ -118,6 +118,26 @@ const auroraMaterial = () => new ShaderMaterial({
   transparent: true, depthWrite: false, blending: AdditiveBlending,
 });
 
+// a soft translucent orb (bokeh): an even glow with a slightly brighter rim, fading out at the edge
+function orbTexture() {
+  const cv = Object.assign(document.createElement("canvas"), { width: 128, height: 128 });
+  const c = cv.getContext("2d")!, g = c.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, "rgba(255,255,255,0.55)"); g.addColorStop(0.62, "rgba(255,255,255,0.5)");
+  g.addColorStop(0.8, "rgba(255,255,255,0.75)"); g.addColorStop(0.9, "rgba(255,255,255,0.3)"); g.addColorStop(1, "rgba(255,255,255,0)");
+  c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+  const t = new CanvasTexture(cv); t.colorSpace = SRGBColorSpace;
+  return t;
+}
+// the halo an envelope gives off as a light: bright at the centre, falling off softly
+function haloTexture() {
+  const cv = Object.assign(document.createElement("canvas"), { width: 128, height: 128 });
+  const c = cv.getContext("2d")!, g = c.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.25, "rgba(255,255,255,0.45)"); g.addColorStop(0.6, "rgba(255,255,255,0.1)"); g.addColorStop(1, "rgba(255,255,255,0)");
+  c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+  const t = new CanvasTexture(cv); t.colorSpace = SRGBColorSpace;
+  return t;
+}
+
 function dotTexture() {
   const cv = Object.assign(document.createElement("canvas"), { width: 32, height: 32 });
   const c = cv.getContext("2d")!, g = c.createRadialGradient(16, 16, 0, 16, 16, 16);
@@ -165,10 +185,18 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
   const trailGeo = new BufferGeometry();
   trailGeo.setAttribute("position", new BufferAttribute(new Float32Array(NT * 3), 3));
   trailGeo.setAttribute("color", new BufferAttribute(new Float32Array(NT * 3), 3));
-  const trailMat = new PointsMaterial({ size: 0.02, map: dotTexture(), vertexColors: true, transparent: true, depthWrite: false, blending: AdditiveBlending, sizeAttenuation: true });
+  const trailMat = new PointsMaterial({ size: 0.02, map: orbTexture(), vertexColors: true, transparent: true, depthWrite: false, blending: AdditiveBlending, sizeAttenuation: true });
   const trail = new Points(trailGeo, trailMat);
   trail.renderOrder = -0.5;
   hero.add(trail);
+  // each envelope's halo, behind it
+  const haloTex = haloTexture(), haloGeo = new PlaneGeometry(1, 1);
+  const halos = items.map((it) => {
+    const m = new Mesh(haloGeo, new MeshBasicMaterial({ map: haloTex, color: "#ffc561", transparent: true, opacity: 0, depthWrite: false, blending: AdditiveBlending }));
+    m.renderOrder = -0.8;
+    hero.add(m);
+    return m;
+  });
   const gold = new Color("#ffcf6a"), back = new Vector3(), side = new Vector3(), tmpV = new Vector3();
 
   const E = new Vector3(), P1 = new Vector3(), dir = new Vector3(), perp = new Vector3(), pos = new Vector3(), mid = new Vector3();
@@ -261,7 +289,7 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
       g.scale.setScalar(it.size * bs);
       // lit by the beam (brighter near its axis), less so once past its end
       const pastEnd = clamp01((u - 1.25) / 0.3);
-      it.env.setLight((1 - Math.min(1, Math.abs(it.lat) * T.emitterSpread * 1.1)) * (1 - pastEnd));
+      it.env.setLight((1 - Math.min(1, Math.abs(it.lat) * T.emitterSpread * 1.1)) * (1 - pastEnd), T.envelopeGlow);
       it.ends = clamp01(u / 0.07) * (1 - clamp01((u - T.fadeStart) / T.fadeLength));
     });
 
@@ -299,13 +327,25 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
           g.position.lerp(pickAt, pick);
           g.rotation.x *= 1 - pick; g.rotation.y *= 1 - pick; g.rotation.z *= 1 - pick;
           g.scale.setScalar(lerp(it.size, T.pickSize, pick) * bs);
-          it.env.setLight(lerp(1, 0, pick));
+          it.env.setLight(lerp(1, 0, pick), T.envelopeGlow * (1 - pick));
         }
         it.env.setOpacity(still ? it.ends * fade : s >= PICK_END ? 0 : it.ends);
       } else {
         g.position.z -= 3 * (1 - fade);
         it.env.setOpacity(it.ends * fade);
       }
+    });
+
+    // ---- halos: each envelope as a small light ----
+    items.forEach((it, k) => {
+      const m = halos[k], mat = m.material as MeshBasicMaterial;
+      const a0 = k < count && it.env.g.visible ? (it.env.box.material as MeshBasicMaterial[])[4].opacity : 0;
+      const on = a0 * T.envelopeGlow * (k === picked ? 1 - pick : 1);
+      m.visible = on > 0.005 && T.glowRadius > 0;
+      if (!m.visible) return;
+      m.position.copy(it.env.g.position); m.position.z -= 0.05;
+      m.scale.setScalar(ENV_W * it.env.g.scale.x * T.glowRadius);
+      mat.opacity = Math.min(1, 0.55 * on);
     });
 
     // ---- golden wake: behind each envelope (back up its path), a V that closes to the centre line quickly ----
@@ -342,6 +382,7 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
     trailGeo.attributes.color.needsUpdate = true;
     trailGeo.computeBoundingSphere();
     trailMat.size = T.trailSize * B.hh;
+    trailMat.opacity = T.trailOpacity;
 
     // ---- stardust ----
     const nd = Math.min(LIMITS.dust, Math.round(T.dustCount * (wide ? 1 : 0.42)));
@@ -357,7 +398,19 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
       // catches the light inside the cone, faint outside it; twinkles as it turns
       const inBeam = 1 - clamp01((Math.abs(d.lat) - 0.7) / 0.3);
       const tw = still ? 1 : 0.6 + 0.4 * Math.sin(t * (1.1 + (i % 5) * 0.3) + d.ph);
-      const b = T.dustBrightness * (0.2 + 0.8 * inBeam) * d.mag * tw * fade * clamp01(u / 0.05) * clamp01((1 - u) / 0.15) * (1.1 - 0.5 * u);
+      // light cast: dust near a glowing envelope picks up its light
+      let lit = 0;
+      if (T.lightCast > 0 && T.envelopeGlow > 0) {
+        for (let k = 0; k < count; k++) {
+          const g = items[k].env.g;
+          if (!g.visible) continue;
+          const r = ENV_W * g.scale.x * Math.max(0.6, T.glowRadius) * 0.6;
+          const dx = g.position.x - pos.x, dy = g.position.y - pos.y;
+          lit += Math.exp(-(dx * dx + dy * dy) / (r * r));
+        }
+        lit *= T.lightCast * T.envelopeGlow * 2.5;
+      }
+      const b = (1 + lit) * T.dustBrightness * (0.2 + 0.8 * inBeam) * d.mag * tw * fade * clamp01(u / 0.05) * clamp01((1 - u) / 0.15) * (1.1 - 0.5 * u);
       dc.set([warm.r * b, warm.g * b, warm.b * b], i * 3);
     }
     dustGeo.attributes.position.needsUpdate = true;

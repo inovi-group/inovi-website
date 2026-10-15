@@ -48,10 +48,14 @@ export const HERO_DEFAULTS = {
   // golden wake behind each envelope: short, closing fast to the centre line behind it
   trailLength: 1.2,      // in envelope heights
   trailTaper: 4.0,       // how fast the wake closes toward the middle (higher = narrower sooner)
-  trailCount: 18,        // particles per envelope (phones show about half)
-  trailSize: 0.03,
-  trailBrightness: 2.2,
+  trailCount: 6,         // orbs per envelope (phones show about half)
+  trailSize: 0.17,       // soft, translucent glowing orbs (bokeh), not fine dust
+  trailOpacity: 0.4,
+  trailBrightness: 1.4,
   trailFade: 0.45,       // how quickly the wake fades along its length (lower = fades sooner)
+  envelopeGlow: 0.25,    // the gold as a light source: emission on top of what the beam lights
+  glowRadius: 1.4,       // the halo around each envelope, in envelope widths
+  lightCast: 0.6,        // how much each envelope lights up the stardust around it
   stampColor: "#8f1d2c", // Firma's wax seal, wherever it appears
   // stardust
   dustCount: 260,        // phones show about 40% of these
@@ -110,10 +114,16 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
   { group: "Golden wake (per envelope)", items: [
     { key: "trailLength", label: "Trail length", min: 0, max: 4, step: 0.05 },
     { key: "trailTaper", label: "Convergence / taper", min: 0, max: 12, step: 0.1 },
-    { key: "trailCount", label: "Particles per envelope", min: 0, max: 40, step: 1 },
-    { key: "trailSize", label: "Particle size", min: 0.004, max: 0.05, step: 0.001 },
+    { key: "trailCount", label: "Orbs per envelope", min: 0, max: 40, step: 1 },
+    { key: "trailSize", label: "Orb size", min: 0.004, max: 0.35, step: 0.002 },
+    { key: "trailOpacity", label: "Orb opacity", min: 0, max: 1, step: 0.01 },
     { key: "trailBrightness", label: "Brightness", min: 0, max: 3, step: 0.05 },
     { key: "trailFade", label: "Fade time", min: 0.05, max: 2, step: 0.01 },
+  ] },
+  { group: "Gold glow", items: [
+    { key: "envelopeGlow", label: "Envelope glow / emission", min: 0, max: 2, step: 0.01 },
+    { key: "glowRadius", label: "Glow radius (halo)", min: 0, max: 4, step: 0.05 },
+    { key: "lightCast", label: "Light cast (on dust)", min: 0, max: 4, step: 0.05 },
   ] },
   { group: "Firma stamp", items: [
     { key: "stampColor", label: "Stamp colour" },

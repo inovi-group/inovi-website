@@ -100,8 +100,9 @@ export function makeEnvelope(face: Texture, seal?: Emblem) {
     g, box, edges, seal,
     // lit by a light beam: the gold catches it (brighter, a touch of the beam's green in the highlights);
     // unlit it sits a little darker, like metal in shadow (0 = unlit)
-    setLight(k: number) {
-      front.color.setRGB(0.72 + 0.5 * k, 0.72 + 0.55 * k, 0.7 + 0.42 * k);
+    // glow: as a light source itself, the gold brightens beyond what the beam gives it (0 = reflective only)
+    setLight(k: number, glow = 0) {
+      front.color.setRGB(0.72 + 0.5 * k, 0.72 + 0.55 * k, 0.7 + 0.42 * k).multiplyScalar(1 + glow);
       side.color.setRGB(0.32 + 0.3 * k, 0.23 + 0.24 * k, 0.08 + 0.1 * k);
       (edges.material as LineBasicMaterial).color.setRGB(0.6 + 0.4 * k, 0.45 + 0.4 * k, 0.18 + 0.3 * k);
     },
