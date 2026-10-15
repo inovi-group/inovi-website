@@ -223,3 +223,17 @@ body:has(.fx-exp) > footer { position: relative; z-index: 2; background: var(--c
   .fx-exp .flow-step .big-step { transform: none; }
 }
 @media (prefers-reduced-motion: reduce) and (max-width: 760px) { .fx-exp .beat.on { transform: none; } }
+
+/* ---------- Envelope concept: headline on the left, the envelope stream on the right ---------- */
+.fx-exp .section.hero { justify-content: flex-start; text-align: left; }
+.fx-exp .hero-copy { max-width: min(560px, 46vw); margin: 0; }
+.fx-exp .hero p.lede { margin-left: 0; max-width: 520px; }
+.fx-exp .values { grid-template-columns: 1fr 1fr; margin-left: 0; max-width: 540px; }
+.fx-exp .hero .cta-block { justify-content: flex-start; }
+.fx-exp .scrim {
+  background: linear-gradient(90deg, rgba(10, 13, 19, 0.9) 0%, rgba(10, 13, 19, 0.7) 34%, rgba(10, 13, 19, 0) 52%);
+}
+@media (max-width: 760px) {
+  .fx-exp .hero-copy { max-width: none; }
+  .fx-exp .scrim { background: linear-gradient(180deg, rgba(10, 13, 19, 0) 30%, rgba(10, 13, 19, 0.88) 52%); }
+}

@@ -34,7 +34,8 @@ import {
 } from "three";
 import type { StoryData, Score, Reality, Decision, ChainRecord } from "./content";
 import { createMonth } from "./monthScene";
-import { createHero, type Palette } from "./heroScene";
+import { createHero } from "./heroScene";
+import { ENV, drawEnvelopeFace, envelopeOutline, makeEnvelope } from "./envelope";
 
 export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 export const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
@@ -406,21 +407,26 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   coreFill.material.uniforms.uGrid.value = 0;
   const coreWire = new LineSegments(new EdgesGeometry(new IcosahedronGeometry(0.44, 1)),
     new LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.9, blending: AdditiveBlending, depthWrite: false }));
-  core.add(coreFill, coreWire);
-  root.add(core);
-  const shell = new LineSegments(new EdgesGeometry(new BoxGeometry(2.9, n * SLAB.gap + 0.55, 2.0)),
-    new LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.55, depthWrite: false }));
+  core.add(coreFill, coreWire); // the X-ray core of the box concept: not shown, the envelope is the deal now
+  // the deal is a sealed contract envelope: its X-ray outline (box edges and the flap's V), glass body, paper
+  const shell = new LineSegments(envelopeOutline(), new LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.55, depthWrite: false }));
   root.add(shell);
+  const envX = new Mesh(new BoxGeometry(ENV.w, ENV.h, ENV.d), xrayMaterial(GOLD, 0));
+  envX.material.uniforms.uGrid.value = 0.35;
+  root.add(envX);
   const scanMat = new ShaderMaterial({
     uniforms: { uOpacity: { value: 1 } },
     vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
     fragmentShader: `uniform float uOpacity; varying vec2 vUv;
       void main(){ vec2 d=abs(vUv-0.5)*2.0; float e=1.0-smoothstep(0.75,1.0,max(d.x,d.y));
-      gl_FragColor=vec4(vec3(0.85,0.64,0.29)*1.4, e*0.22*uOpacity);} `,
+      float band=(1.0-smoothstep(0.35,1.0,d.y))*(1.0-smoothstep(0.85,1.0,d.x));
+      float line=(1.0-smoothstep(0.0,0.1,d.y))*(1.0-smoothstep(0.9,1.0,d.x));
+      gl_FragColor=vec4(mix(vec3(0.85,0.64,0.29)*1.4, vec3(1.0,0.95,0.8), line), (band*0.35+line*0.8)*uOpacity);} `,
     transparent: true, depthWrite: false, blending: AdditiveBlending, side: DoubleSide,
   });
-  const scan = new Mesh(new PlaneGeometry(2.7, 1.8), scanMat);
-  scan.rotation.x = -Math.PI / 2;
+  // the scan: a band of light that passes down through the envelope, facing the viewer
+  const scan = new Mesh(new PlaneGeometry(ENV.w * 1.12, 0.46), scanMat);
+  scan.renderOrder = 6;
   root.add(scan);
 
   const slabGeo = new BoxGeometry(SLAB.w, SLAB.h, SLAB.d);
@@ -479,7 +485,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   stamp.visible = false;
   root.add(stamp);
   // on a loss the box splits into four pieces that drift apart, then knit back together
-  const BOX = { w: 2.9, h: n * SLAB.gap + 0.55, d: 2.0 };
+  const BOX = { w: ENV.w, h: ENV.h, d: ENV.d }; // the envelope splits on a loss
   const shards = [[-1, 1], [1, 1], [-1, -1], [1, -1]].map(([sx, sy], k) => {
     const geo = new BoxGeometry(BOX.w / 2, BOX.h / 2, BOX.d);
     geo.translate((sx * BOX.w) / 4, (sy * BOX.h) / 4, 0);
@@ -595,6 +601,11 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     };
   }
   const makers: Record<string, () => Emblem> = { a: padlock, b: wax, c: shield };
+  // the deal's paper envelope, sealed with Firma's wax seal; the hero stream uses the same face and seal
+  const envCv = canvasOf(1024, Math.round((1024 * ENV.h) / ENV.w));
+  const envFace = texOf(envCv);
+  const paper = makeEnvelope(envFace, wax());
+  root.add(paper.g);
   let treatment = "b";
 
   const recs = records.map((r) => {
@@ -683,6 +694,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   };
 
   const redraw = () => {
+    drawEnvelopeFace(envCv); envFace.needsUpdate = true;
     month.redraw();
     drawWax(waxCv); waxTex.needsUpdate = true; // the seal's letter needs the web font too
     layers.forEach((l) => {
@@ -709,7 +721,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   let monthStep = 0;
   const month = createMonth({ parent: stage, deal: root, data, fonts: F, texOf, makeSeal: wax, glass: xrayMaterial });
   // hero: a network of cores behind the headline; the featured deal is one of them and comes forward
-  const hero = createHero({ parent: stage, deal: root, gl });
+  const hero = createHero({ parent: stage, deal: root, face: envFace, makeSeal: wax });
   redraw();
   let alive = true;
   Promise.all([document.fonts?.load(`700 150px ${F.sans}`), document.fonts?.load(`600 38px ${F.mono}`)]).catch(() => {}).then(() => alive && redraw());
@@ -794,7 +806,6 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   const flights: ([number, number] | null)[] = [null, [0.3, 0.97], [1.3, 1.97], [2.3, 2.97], [3.62, 3.98], [5.4, 5.97]]; // the outcome leaves for the chain only after it has hit the box
   const TRAVEL = 0.68; // share of each flight spent travelling; the rest is the lock
 
-  let heroDist = 10; // camera distance in the hero framing: the constellations fill what it sees
   function placeCamera(bg: number, P: Layout) {
     const { w, h, aspect, wide } = view;
     const B = P.bounds;
@@ -803,13 +814,11 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
       // content framed in the right ~53% of the screen, the large story text on the left
       const fg = Math.max(B.hh / (fov * 0.84), B.hw / (fov * aspect * 0.53));
       dist = lerp(fg * 0.8, fg, bg);
-      heroDist = fg * 0.8;
       ox = lerp(0, -w * 0.19, bg); oy = 0;
     } else {
       // content in the top half of the screen (below the header), above the story text
       const fg = Math.max(B.hh / (fov * 0.47), B.hw / (fov * aspect * 0.94));
       dist = lerp(fg * 0.9, fg, bg);
-      heroDist = fg * 0.9;
       ox = 0; oy = lerp(h * 0.04, h * 0.145, bg);
     }
     camera.aspect = aspect;
@@ -856,13 +865,15 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   const tmp = new Vector3(), tmpC = new Color();
   // Story steps 0–8 are the deal's own timeline (hero network, scores, outcome, judging, decision, verify,
   // rewrite attempt); 8–10 are the month end, where the deal waits in its last state while the report forms.
+  // Story steps: 0 the hero stream, 0–1 one envelope is picked out and scanned, 1–9 the deal's own timeline
+  // (scores, outcome, judging, decision, verify, rewrite attempt), 9–11 the month end and the report.
   function update({ step: s, t, dt, still }: FrameCtx) {
-    const step = Math.min(s, 8);
+    const step = Math.min(Math.max(s - 1, 0), 8);
     const P = LAYOUTS[layoutId][view.wide ? "wide" : "narrow"];
     const BS = P.box, BC = P.bc;
     const D = DIMS[P.style];
     placeZones(P);
-    const bg = ease(clamp01(step / 0.85)); // 0 = background, 1 = foreground subject
+    const bg = ease(clamp01((s - 0.4) / 0.5)); // 0 = hero, 1 = the deal in front (once its envelope has arrived)
     const open = clamp01(step * 1.6);
     const rl = phase(step, 3.1, 3.5);
     const cmp = phase(step, 4.35, 5);
@@ -884,7 +895,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     const jt = judgedAt >= 0 ? now - judgedAt : -1;
     const jolt = boom && !still ? (won ? 0.05 : 0.075) * BS * Math.exp(-k * 10) : 0;
     setBackdrop(bg);
-    placeCamera(bg, P);
+    placeCamera(1, P); // the scene keeps the right of the screen; the hero text has the left
     // zones fade in as the scene comes forward; the divider separates them
     zones.deal.material.opacity = bg;
     zones.firma.material.opacity = Math.max(0.35, bg);
@@ -896,7 +907,14 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     stage.position.x = jolt * Math.sin(k * 70);
     stage.position.y += jolt * 0.6 * Math.cos(k * 55);
 
-    // box
+    // the envelope, and the scan that reveals what is inside it
+    const scanP = still ? 0 : phase(s, 0.5, 0.95);
+    const seen = still ? clamp01((s - 0.45) / 0.3) : scanP; // paper gives way to the X-ray view
+    paper.g.position.copy(BC);
+    paper.g.scale.setScalar(BS);
+    paper.setOpacity(1 - seen);
+    envX.position.copy(BC);
+    envX.scale.setScalar(BS);
     shell.scale.setScalar(BS);
     scan.scale.setScalar(BS);
     shell.position.copy(BC);
@@ -904,7 +922,9 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     const flash = boom && !still ? Math.exp(-k * 3.2) : 0;
     const split = boom && !still && !won ? (k < 0.55 ? easeOut(k / 0.55) : k < 1.0 ? 1 : 1 - ease(clamp01((k - 1.0) / 0.9))) : 0;
     const shattered = boom && !still && !won && k < 1.9;
-    shell.material.opacity = shattered ? 0 : Math.max(lerp(0.55, 0.25, open) + (landed ? 0.15 : 0), won ? 0.55 + 0.45 * flash : 0);
+    shell.material.opacity = (shattered ? 0 : Math.max(lerp(0.55, 0.25, open) + (landed ? 0.15 : 0), won ? 0.55 + 0.45 * flash : 0)) * seen;
+    envX.material.uniforms.uOpacity.value = (shattered ? 0 : 0.35) * seen;
+    envX.material.uniforms.uColor.value.copy(shell.material.color);
     tmpC.copy(GOLD).lerp(won ? WIN : BAD, landed ? (won ? 0.3 : 0.45) : 0).lerp(WHITE, won ? flash * 0.6 : 0);
     shell.material.color.copy(tmpC);
     shards.forEach((m) => {
@@ -917,9 +937,10 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
       m.material.color.copy(BAD).lerp(GOLD, clamp01((k - 1.2) / 0.7) * 0.55);
       m.material.opacity = 0.95;
     });
-    scanMat.uniforms.uOpacity.value = 1 - open;
-    scan.visible = open < 1 && !still;
-    scan.position.set(BC.x, BC.y + Math.sin(t * 0.9) * (SLAB.gap * n * 0.5) * BS, 0);
+    const scanning = scanP > 0 && scanP < 1;
+    scanMat.uniforms.uOpacity.value = Math.sin(Math.PI * scanP);
+    scan.visible = scanning;
+    scan.position.set(BC.x, BC.y + (0.5 - scanP) * ENV.h * 1.1 * BS, ENV.d * BS);
     scan.updateMatrixWorld();
     const scanY = scan.getWorldPosition(tmp).y;
 
@@ -927,21 +948,26 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
       const a = ease(clamp01(step - l.i));
       const b = ease(clamp01(step - l.i - 1));
       const S = P.slot(l.i), F = P.focus;
+      // inside the envelope the three score cards stand like documents, the first in front, the others peeking above
+      const inY = BC.y + (-0.2 + 0.22 * l.i) * BS, inZ = (0.03 - 0.03 * l.i) * BS;
       l.g.position.set(
         lerp(lerp(BC.x, F.p.x, a), S.p.x, b),
-        lerp(lerp(BC.y + l.stackY * BS, F.p.y, a), S.p.y, b),
-        lerp(lerp(0, F.p.z, a), S.p.z, b) + Math.sin(Math.PI * a) * 0.4 * (1 - b)
+        lerp(lerp(inY, F.p.y, a), S.p.y, b),
+        lerp(lerp(inZ, F.p.z, a), S.p.z, b) + Math.sin(Math.PI * a) * 0.4 * (1 - b)
       );
-      l.g.rotation.x = lerp(lerp(0, Math.PI / 2 - 0.2, a), Math.PI / 2 - 0.08, b);
-      l.g.scale.setScalar(lerp(lerp(BS, F.s, a), S.s, b) * lerp(1, l.s.check.ok ? 1.1 : 0.94, cmp));
+      l.g.rotation.x = lerp(lerp(Math.PI / 2, Math.PI / 2 - 0.2, a), Math.PI / 2 - 0.08, b);
+      l.g.scale.setScalar(lerp(lerp(BS * 0.78, F.s, a), S.s, b) * lerp(1, l.s.check.ok ? 1.1 : 0.94, cmp));
+      // hidden in the sealed envelope until the scan passes over the card
+      const rev = s >= 1 ? 1 : still ? seen : clamp01((inY + 0.3 * BS - scanY) / (0.45 * BS));
       const reveal = clamp01((step - l.i) * 1.6);
       tmpC.copy(IDLE).lerp(l.color, reveal).lerp(l.s.check.ok ? OK : IDLE, cmp);
       l.fill.material.uniforms.uColor.value.copy(tmpC);
       l.edges.material.color.copy(cmp > 0.5 ? (l.s.check.ok ? OK : BAD) : tmpC);
-      l.fill.material.uniforms.uOpacity.value = lerp(0.55 + 0.35 * open, 0.85, reveal) * (l.s.check.ok ? 1 : lerp(1, 0.65, cmp));
+      l.fill.material.uniforms.uOpacity.value = lerp(0.55 + 0.35 * open, 0.85, reveal) * (l.s.check.ok ? 1 : lerp(1, 0.65, cmp)) * rev;
       l.fill.material.uniforms.uGrid.value = 1 - reveal * 0.6;
-      l.edges.material.opacity = lerp(0.55, 1, reveal);
-      const face = clamp01((a - 0.35) * 2.5);
+      l.edges.material.opacity = lerp(0.55, 1, reveal) * rev;
+      // the scores read through the X-ray while the card is still inside
+      const face = Math.max(clamp01((a - 0.35) * 2.5), (1 - a) * rev * 0.85);
       l.plain.material.opacity = face * (1 - cmp);
       l.checkedFace.material.opacity = face * cmp;
       // judged: right ones light up with a pulse, wrong ones shudder (and show their crack)
@@ -951,7 +977,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
         else l.g.position.x += 0.05 * BS * e * Math.sin(jt * 70);
       }
       l.fill.material.uniforms.uScanY.value = scanY;
-      l.fill.material.uniforms.uScan.value = scan.visible ? 1 - open : 0;
+      l.fill.material.uniforms.uScan.value = scanning ? 1 : 0;
     });
 
     const R = P.real;
@@ -982,6 +1008,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     // once reality is out, the core steps up and back so the outcome plate reads cleanly;
     // it tightens while the result is held, then flares on a win or sinks on a loss
     const corePulse = still ? 1 : (1 - 0.22 * charge) * (won ? 1 + 0.8 * flash : 1 - 0.25 * res);
+    core.visible = false;
     core.scale.setScalar(BS * (1 + 0.2 * open) * lerp(1, 0.62, rl) * corePulse);
     core.position.set(BC.x, BC.y + 0.42 * rl * BS, -0.4 * rl);
     if (!still) { const spin = 1 + 5 * charge + 6 * flash; core.rotation.y += dt * 0.35 * spin; core.rotation.x += dt * 0.12 * spin; }
@@ -1144,14 +1171,13 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     tmpC.copy(GOLD).lerp(OK, verifiedAt(recs.length - 1)).lerp(BAD, tp);
     vault.material.color.copy(tmpC);
     vault.material.opacity = 0.25 + 0.45 * Math.max(verifiedAt(recs.length - 1), tp);
-    monthStep = s;
+    monthStep = s - 1;
     // after this frame's opacities are set: Firma's record comes in with the deal as it leaves the hero network,
     // and steps out again at month end (there is one Firma: the report)
-    fadeFirma(Math.min(ease(clamp01((s - 0.2) / 0.7)), 1 - phase(s, 8.05, 8.45)));
+    fadeFirma(Math.min(ease(clamp01((s - 0.9) / 0.5)), 1 - phase(s - 1, 8.05, 8.45)));
     const dz = P.zones.deal;
-    month.update({ s, t, still, wide: view.wide, bounds: P.bounds, zone: { cx: dz.cx, cy: dz.cy, w: dz.w, h: dz.h } });
-    const hh = heroDist * fov;
-    hero.update({ s, t, still, wide: view.wide, featured: P.bc, camera, view: { cx: P.bounds.cx, cy: P.bounds.cy, hw: hh * view.aspect, hh, dist: heroDist } });
+    month.update({ s: s - 1, t, still, wide: view.wide, bounds: P.bounds, zone: { cx: dz.cx, cy: dz.cy, w: dz.w, h: dz.h } });
+    hero.update({ s, t, still, wide: view.wide, bounds: P.bounds, bc: P.bc, bs: P.box });
   }
   return {
     update,
@@ -1159,8 +1185,6 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     setView(v: View) { Object.assign(view, v); },
     setTreatment(kind: string) { if (makers[kind]) treatment = kind; },
     setLayout(id: number) { if (LAYOUTS[id]) layoutId = id; },
-    // hero mesh colours: a blue/teal, b violet
-    setPalette(p: Palette) { hero.setPalette(p); },
     // a new outcome rewrites the faces (the data objects were updated in place by the page)
     setOutcome() { redraw(); },
     // the month end replays poorly out of sight: callers scroll back to the deal instead

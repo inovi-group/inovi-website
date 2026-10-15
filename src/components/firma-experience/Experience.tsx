@@ -9,7 +9,6 @@ import { mountFlow } from "./flow";
 import { mountStory } from "./story";
 import { pageTop } from "./listen";
 import type { SceneApi } from "./ExperienceScene";
-import type { Palette } from "./heroScene";
 import "./experience.css";
 
 // WebGL only in the browser: the static export ships the page text, the scene mounts on the client.
@@ -20,11 +19,9 @@ const SCROLL_NAMES = { a: "Natural", b: "Magnetic", c: "One at a time" } as cons
 type ScrollMode = keyof typeof SCROLL_NAMES;
 // Three ways of separating the deal analysis from the FIRMA record: ?layout=1|2|3 (or the toggle).
 const LAYOUT_NAMES: Record<number, string> = { 1: "Zones", 2: "Ledger", 3: "Docked" };
-const OUTCOME_BEAT = 3, LANDS_AT = 3.5; // "Then the deal closes." (scene step 4); the outcome hits the box at 3.5
+const OUTCOME_BEAT = 4, LANDS_AT = 4.5; // "Then the deal closes." (scene step 5); the outcome hits the envelope at 4.5
 
-type Config = { scroll: ScrollMode; layout: number; outcome: Outcome; treatment: string; palette: Palette };
-// Two colour treatments for the hero mesh: ?palette=a (blue / teal) | b (violet), or the toggle.
-const PALETTE_NAMES: Record<Palette, string> = { a: "Blue", b: "Violet" };
+type Config = { scroll: ScrollMode; layout: number; outcome: Outcome; treatment: string };
 function readConfig(): Config {
   const q = new URLSearchParams(window.location.search);
   const s = q.get("scroll");
@@ -36,7 +33,6 @@ function readConfig(): Config {
     outcome: q.get("outcome") === "won" ? "won" : "lost",
     // wax seals are the chosen treatment; padlocks (a) and vault (c) stay reachable via ?chain= for reference
     treatment: c === "a" || c === "c" ? c : "b",
-    palette: q.get("palette") === "b" ? "b" : "a",
   };
 }
 
@@ -74,7 +70,6 @@ export function Experience() {
   const [cfg, setCfg] = useState<Config | null>(null);
   const [layout, setLayout] = useState(1);
   const [outcome, setOutcome] = useState<Outcome>("lost");
-  const [palette, setPalette] = useState<Palette>("a");
   const [data, setData] = useState<StoryData | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const storyRef = useRef<HTMLElement>(null);
@@ -90,7 +85,6 @@ export function Experience() {
     setCfg(c);
     setLayout(c.layout);
     setOutcome(c.outcome);
-    setPalette(c.palette);
     setData(createStoryData(c.outcome));
   }, []);
 
@@ -178,7 +172,7 @@ export function Experience() {
     <div className="fx-exp" ref={rootRef} data-scroll={mode}>
       <div className="fx-scene" aria-hidden="true">
         {cfg && data && reduceMotion.current && (
-          <ExperienceScene getStep={getStep} data={data} layout={layout} treatment={cfg.treatment} palette={palette}
+          <ExperienceScene getStep={getStep} data={data} layout={layout} treatment={cfg.treatment}
             reduceMotion={reduceMotion.current} apiRef={sceneApi} setBackdrop={setBackdrop} />
         )}
       </div>
@@ -248,14 +242,6 @@ export function Experience() {
           <span>Scroll</span>
           {(Object.keys(SCROLL_NAMES) as ScrollMode[]).map((k) => (
             <a key={k} href={scrollHref(k)} aria-current={k === mode}><b>{k.toUpperCase()}</b><i> {SCROLL_NAMES[k]}</i></a>
-          ))}
-        </div>
-        <div role="group" aria-label="Hero colours">
-          <span>Hero</span>
-          {(Object.keys(PALETTE_NAMES) as Palette[]).map((k) => (
-            <button key={k} type="button" aria-pressed={k === palette} onClick={() => { setPalette(k); setParam("palette", k); }}>
-              <b>{k.toUpperCase()}</b><i> {PALETTE_NAMES[k]}</i>
-            </button>
           ))}
         </div>
         <div role="group" aria-label="Outcome">

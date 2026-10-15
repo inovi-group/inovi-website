@@ -137,8 +137,11 @@ function monthFor(d: StoryData, outcome: Outcome): Month {
   };
 }
 
-// The story, one step per scene step (1–10): a big headline, what happens, and why it matters.
+// The story, one step per scene step (1–11): a big headline, what happens, and why it matters.
 export const STEPS: [idx: string, headline: string, what: string, why: string][] = [
+  ["01 · One deal", "Pick one deal. Look inside.",
+    "Every deal arrives as a sealed contract, carrying the scores your tools and your team put on it. Firma takes one out of the flow and scans it, so every score inside is in plain view.",
+    "You can't decide what to trust while the scores stay sealed away in different tools."],
   ["01 · A score lands", "A score lands. Firma seals it.",
     "A revenue tool or your CRM puts a risk score on the deal. The moment it arrives, Firma takes a snapshot and seals it into a tamper-proof record beside the deal.",
     "Scores get overwritten every night. The sealed copy is what the provider actually said, when it said it."],

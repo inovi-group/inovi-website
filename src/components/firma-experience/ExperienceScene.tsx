@@ -5,7 +5,6 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 import { Group, type PerspectiveCamera } from "three";
 import { createCheck } from "./checkScene";
 import type { StoryData } from "./content";
-import type { Palette } from "./heroScene";
 
 export type SceneApi = ReturnType<typeof createCheck>;
 
@@ -14,7 +13,6 @@ type Props = {
   data: StoryData;
   layout: number;
   treatment: string;
-  palette: Palette;
   reduceMotion: MediaQueryList;
   apiRef: MutableRefObject<SceneApi | null>;
   setBackdrop: (bg: number) => void;
@@ -36,7 +34,7 @@ function siteFonts() {
  * and driven every frame by the scroll step. The canvas takes no input: it only tilts a few degrees
  * toward the mouse (eased, back to rest when the mouse leaves) or sways slightly with scroll on touch.
  */
-function Check({ getStep, data, layout, treatment, palette, reduceMotion, apiRef, setBackdrop }: Props) {
+function Check({ getStep, data, layout, treatment, reduceMotion, apiRef, setBackdrop }: Props) {
   const { camera, gl } = useThree();
   const tilt = useRef<Group>(null);
   const api = useRef<SceneApi | null>(null);
@@ -60,7 +58,6 @@ function Check({ getStep, data, layout, treatment, palette, reduceMotion, apiRef
 
   useEffect(() => { api.current?.setLayout(layout); }, [layout]);
   useEffect(() => { api.current?.setTreatment(treatment); }, [treatment]);
-  useEffect(() => { api.current?.setPalette(palette); }, [palette]);
 
   // mouse-follow tilt
   useEffect(() => {

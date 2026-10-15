@@ -16,11 +16,13 @@ import {
 } from "three";
 import type { Month, MonthDeal, StoryData } from "./content";
 import { MONTH_MAIN } from "./content";
+import { ENV, drawEnvelopeFace } from "./envelope";
 
 /**
- * Month end, the last act (story steps 8 → 10), after the deal's verify and rewrite attempt:
+ * Month end, the last act (deal steps 8 → 10, story steps 9 → 11), after the deal's verify and rewrite attempt:
  *   8.05–8.45  Firma steps out of the deal view: its record panel and chain fade (there is one Firma, not one per deal)
- *   8.45–9.0   the deal shrinks into a plain card and the view pulls back to the month's closed deals, won or lost
+ *   8.45–9.0   the deal shrinks into a plain envelope and the view pulls back to the month's closed deals as
+ *              envelopes, each stamped won or lost (no seals on them: the report is the one Firma record)
  *   9.1–9.7    the cards fly in, one after another, and stack into the report (it thickens as they land)
  *   9.6–10     the report turns to face you, its cover swings open onto the month-end summary, and the seal presses;
  *              the page ends on it, with the call to action beside it
@@ -49,27 +51,29 @@ const tierColor = (v: number) => (v >= 0.67 ? OKC : v >= 0.34 ? MIXC : BADC);
 
 type Fonts = { sans: string; mono: string };
 
-// One closed deal of the month, as a plain card: which deal, and whether it was won or lost. Firma is not on
-// the cards: there is one Firma, and it is the report these cards are gathered into.
+// One closed deal of the month, as a plain envelope: which deal, and a WON or LOST stamp on it. No seal and no
+// chain: there is one Firma, and it is the report these envelopes are gathered into.
 function drawCard(cv: HTMLCanvasElement, d: MonthDeal, F: Fonts) {
   const c = cv.getContext("2d")!, W = cv.width, H = cv.height, m = Math.min(W, H);
   c.clearRect(0, 0, W, H);
-  rrect(c, 4, 4, W - 8, H - 8, m * 0.06);
-  c.fillStyle = "rgba(16,20,28,0.96)"; c.fill();
-  c.lineWidth = 4; c.strokeStyle = "rgba(92,102,120,0.85)"; c.setLineDash([14, 10]); c.stroke(); c.setLineDash([]);
-  const won = d.result === "won", col = won ? OKC : BADC;
   c.fillStyle = d.main ? GOLD : "#94a0b4"; c.font = `600 ${Math.round(m * 0.09)}px ${F.mono}`;
-  c.fillText(d.label, m * 0.08, m * 0.15);
-  // the outcome, centred and large
-  const word = won ? "WON" : "LOST";
-  c.font = `700 ${Math.round(m * 0.2)}px ${F.sans}`;
-  const tw = c.measureText(word).width, bw = tw + m * 0.14, bh = m * 0.3, bx = (W - bw) / 2, by = H / 2 - bh / 2 + m * 0.04;
-  c.fillStyle = won ? "rgba(70,184,118,0.12)" : "rgba(239,90,76,0.12)"; c.fillRect(bx, by, bw, bh);
-  c.strokeStyle = col; c.lineWidth = m * 0.016; c.strokeRect(bx, by, bw, bh);
-  c.fillStyle = col; c.textAlign = "center"; c.fillText(word, W / 2, by + bh * 0.72);
-  c.fillStyle = "#5c6678"; c.font = `500 ${Math.round(m * 0.065)}px ${F.mono}`;
-  c.fillText(won ? "CLOSED WON" : "CLOSED LOST", W / 2, by + bh + m * 0.12);
-  c.textAlign = "left";
+  c.fillText(d.label, W * 0.06, m * 0.12);
+  // the envelope, as large as fits under the label
+  const top = m * 0.18, ew = Math.min(W * 0.94, (H - top - m * 0.04) * (ENV.w / ENV.h)), eh = ew * (ENV.h / ENV.w);
+  const env = Object.assign(document.createElement("canvas"), { width: Math.round(ew), height: Math.round(eh) });
+  drawEnvelopeFace(env);
+  const ex = (W - ew) / 2, ey = top + (H - top - eh) / 2;
+  c.drawImage(env, ex, ey);
+  // the outcome, stamped across it
+  const won = d.result === "won", col = won ? OKC : BADC, word = won ? "WON" : "LOST";
+  c.save();
+  c.translate(W / 2, ey + eh * 0.6); c.rotate(won ? -0.1 : 0.1);
+  c.font = `800 ${Math.round(eh * 0.3)}px ${F.sans}`;
+  const tw = c.measureText(word).width, bw = tw + eh * 0.2, bh = eh * 0.42;
+  c.fillStyle = "rgba(10,13,19,0.8)"; c.fillRect(-bw / 2, -bh / 2, bw, bh);
+  c.strokeStyle = col; c.lineWidth = eh * 0.03; c.strokeRect(-bw / 2, -bh / 2, bw, bh);
+  c.fillStyle = col; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(word, 0, eh * 0.01);
+  c.restore();
 }
 // card canvases follow the shape of the deal panel they stand in for (it differs per layout and screen)
 function cardCanvas(aspect: number) {
