@@ -237,3 +237,31 @@ body:has(.fx-exp) > footer { position: relative; z-index: 2; background: var(--c
   .fx-exp .hero-copy { max-width: none; }
   .fx-exp .scrim { background: linear-gradient(180deg, rgba(10, 13, 19, 0) 30%, rgba(10, 13, 19, 0.88) 52%); }
 }
+
+/* ---------- Hero tuning panel (?tune=1) ---------- */
+.fx-exp .tune {
+  position: fixed; z-index: 45; top: calc(var(--header) + 10px); right: 12px; width: 320px;
+  max-height: calc(100vh - var(--header) - 24px); overflow: auto;
+  border: 1px solid var(--line); border-radius: 10px; background: rgba(12, 16, 23, 0.94);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+}
+.fx-exp .tune-head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: rgba(12, 16, 23, 0.98); border-bottom: 1px solid var(--line); }
+.fx-exp .tune-head b { color: var(--text); letter-spacing: 0.08em; text-transform: uppercase; }
+.fx-exp .tune button { font: inherit; color: var(--text); background: var(--firma-soft); border: 1px solid rgba(217, 163, 74, 0.4); border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+.fx-exp .tune button:hover { border-color: var(--firma); }
+.fx-exp .tune-body { padding: 4px 12px 12px; }
+.fx-exp .tune-hint { margin: 8px 0 4px; color: var(--dim); line-height: 1.5; }
+.fx-exp .tune fieldset { border: 0; border-top: 1px solid var(--line); margin: 8px 0 0; padding: 8px 0 0; }
+.fx-exp .tune legend { color: var(--firma); letter-spacing: 0.1em; text-transform: uppercase; padding: 0 6px 0 0; }
+.fx-exp .tune-row { display: grid; grid-template-columns: 112px 1fr 50px; align-items: center; gap: 8px; margin-top: 6px; }
+.fx-exp .tune-row span { color: var(--muted); line-height: 1.25; }
+.fx-exp .tune-row input[type="range"] { width: 100%; accent-color: var(--firma); }
+.fx-exp .tune-row input[type="color"] { width: 100%; height: 22px; border: 1px solid var(--line); border-radius: 4px; background: none; padding: 0; }
+.fx-exp .tune-row output { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+.fx-exp .tune-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.fx-exp .tune-actions span { color: var(--firma); }
+.fx-exp .tune textarea { width: 100%; margin-top: 8px; resize: vertical; font: inherit; font-size: 10.5px; color: var(--text); background: #0a0d13; border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+@media (max-width: 760px) {
+  .fx-exp .tune { top: auto; bottom: 10px; left: 10px; right: 10px; width: auto; max-height: 55vh; }
+}

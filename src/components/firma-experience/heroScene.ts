@@ -16,6 +16,7 @@ import {
   type Texture,
 } from "three";
 import { makeEnvelope } from "./envelope";
+import { heroTune as T, LIMITS } from "./heroTuning";
 
 /**
  * The hero background. A spotlight shines down from a point at the top right; sealed contract envelopes come
@@ -32,7 +33,7 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 type Emblem = { g: Group; set(lock: number, ver: number, brk: number, alpha: number): void };
 type Bounds = { cx: number; cy: number; hw: number; hh: number };
-type Item = { env: ReturnType<typeof makeEnvelope>; u0: number; lat: number; z: number; size: number; ph: number };
+type Item = { env: ReturnType<typeof makeEnvelope>; jit: number; lat: number; zr: number; sr: number; ph: number };
 
 export const PICK_END = 0.45; // by here the featured envelope has arrived and the deal's own envelope takes over
 
@@ -49,10 +50,10 @@ const VERT = /* glsl */ `varying vec2 vUv; void main() { vUv = uv; gl_Position =
 // green light (normal blending, so it reads as a solid shaft rather than a bright glare) that widens with
 // distance, slow drifting streaks, and a brighter additive core with a hot source.
 const beamMaterial = (core: boolean) => new ShaderMaterial({
-  uniforms: { uTime: { value: 0 }, uAlpha: { value: 1 }, uW0: { value: 0.04 }, uColor: { value: new Color(core ? "#b8f5dc" : "#2b9c80") } },
+  uniforms: { uTime: { value: 0 }, uAlpha: { value: 1 }, uW0: { value: 0.04 }, uColor: { value: new Color(core ? "#b8f5dc" : "#2b9c80") }, uBody: { value: 0.5 }, uCoreK: { value: 0.22 }, uGlow: { value: 0.5 } },
   vertexShader: VERT,
   fragmentShader: /* glsl */ `
-    uniform float uTime, uAlpha, uW0; uniform vec3 uColor; varying vec2 vUv;
+    uniform float uTime, uAlpha, uW0, uBody, uCoreK, uGlow; uniform vec3 uColor; varying vec2 vUv;
     ${NOISE}
     void main() {
       float y = 1.0 - vUv.y, x = abs(vUv.x - 0.5) * 2.0; // the plane is turned so its top (v = 1) is at the source
@@ -61,7 +62,7 @@ const beamMaterial = (core: boolean) => new ShaderMaterial({
       float along = smoothstep(0.0, 0.04, y) * (1.0 - smoothstep(0.8, 1.0, y)) * ${core ? "pow(1.0 - y, 1.4)" : "mix(1.0, 0.7, y)"};
       float streaks = 0.75 + 0.25 * fbm(vec2(x / max(half_, 0.05) * 3.0, y * 2.0 - uTime * 0.04));
       float glow = exp(-pow(y * 14.0, 2.0)) * (1.0 - smoothstep(0.0, 0.3, x)) * 1.6; // the hot source
-      float a = ${core ? "(edge * along * streaks * 0.22 + glow * 0.5)" : "edge * along * streaks * 0.5"} * uAlpha;
+      float a = ${core ? "(edge * along * streaks * uCoreK + glow * uGlow)" : "edge * along * streaks * uBody"} * uAlpha;
       ${core ? "gl_FragColor = vec4(uColor * a, a);" : "gl_FragColor = vec4(uColor, a);"}
     }`,
   transparent: true, depthWrite: false, blending: core ? AdditiveBlending : NormalBlending,
@@ -70,10 +71,10 @@ const beamMaterial = (core: boolean) => new ShaderMaterial({
 // Aurora, inside the beam only: slow flowing ribbons of colour running down the cone, drawn on the beam's own
 // plane and masked by the cone's edge, so none of it spreads across the rest of the background.
 const auroraMaterial = () => new ShaderMaterial({
-  uniforms: { uTime: { value: 0 }, uAlpha: { value: 1 }, uW0: { value: 0.04 } },
+  uniforms: { uTime: { value: 0 }, uAlpha: { value: 1 }, uW0: { value: 0.04 }, uIntensity: { value: 0.45 }, uMix: { value: new Vector3(1, 1, 0.5) } },
   vertexShader: VERT,
   fragmentShader: /* glsl */ `
-    uniform float uTime, uAlpha, uW0; varying vec2 vUv;
+    uniform float uTime, uAlpha, uW0, uIntensity; uniform vec3 uMix; varying vec2 vUv;
     ${NOISE}
     float ribbon(float xn, float y, float c, float w, float sp, float f) {
       float cx = c + 0.18 * sin(y * f + uTime * sp) + 0.14 * (fbm(vec2(y * 2.0 - uTime * sp * 0.6, c * 9.0)) - 0.5);
@@ -85,10 +86,10 @@ const auroraMaterial = () => new ShaderMaterial({
       float y = 1.0 - vUv.y, x = (vUv.x - 0.5) * 2.0;
       float half_ = mix(uW0, 1.0, y), xn = x / max(half_, 0.02); // -1 … 1 across the cone at this height
       float cone = 1.0 - smoothstep(0.6, 0.95, abs(xn));
-      vec3 c = vec3(0.16, 0.86, 0.66) * ribbon(xn, y, -0.35, 0.18, 0.05, 3.1)
-             + vec3(0.42, 0.42, 0.95) * ribbon(xn, y, 0.25, 0.2, 0.035, 2.3)
-             + vec3(0.9, 0.7, 0.32) * ribbon(xn, y, 0.0, 0.1, 0.045, 4.0) * 0.5;
-      float a = 0.45 * cone * smoothstep(0.03, 0.18, y) * (1.0 - smoothstep(0.75, 1.0, y)) * uAlpha;
+      vec3 c = vec3(0.16, 0.86, 0.66) * ribbon(xn, y, -0.35, 0.18, 0.05, 3.1) * uMix.x
+             + vec3(0.42, 0.42, 0.95) * ribbon(xn, y, 0.25, 0.2, 0.035, 2.3) * uMix.y
+             + vec3(0.9, 0.7, 0.32) * ribbon(xn, y, 0.0, 0.1, 0.045, 4.0) * uMix.z;
+      float a = uIntensity * cone * smoothstep(0.03, 0.18, y) * (1.0 - smoothstep(0.75, 1.0, y)) * uAlpha;
       gl_FragColor = vec4(c * a, a * max(c.r, max(c.g, c.b)));
     }`,
   transparent: true, depthWrite: false, blending: AdditiveBlending,
@@ -116,22 +117,21 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
   const beams = [false, true].map((core) => { const m = new Mesh(new PlaneGeometry(1, 1), beamMaterial(core)); m.renderOrder = -2; return m; });
   hero.add(aurora, ...beams);
 
-  const MAX = 16;
-  // item 0 is the featured deal; it holds its place in the stream so it is on screen when the scroll begins
-  const items: Item[] = Array.from({ length: MAX }, (_, k) => {
+  // item 0 is the featured deal; it holds its place in the stream so it is on screen when the scroll begins.
+  // Each item keeps its own random draws (jitter, side, depth, size); the tuning ranges map them every frame.
+  const items: Item[] = Array.from({ length: LIMITS.envelopes }, (_, k) => {
     const env = makeEnvelope(face, makeSeal());
     hero.add(env.g);
     return k === 0
-      ? { env, u0: 0.5, lat: 0.15, z: 0.6, size: 0.62, ph: 1.3 }
-      : { env, u0: k / MAX + rnd() * 0.04, lat: rnd() * 2 - 1, z: lerp(-4.5, 1.4, rnd()), size: lerp(0.3, 0.6, rnd()), ph: rnd() * 6.28 };
+      ? { env, jit: 0, lat: 0.15, zr: 0.85, sr: 1, ph: 1.3 }
+      : { env, jit: rnd() * 0.04, lat: rnd() * 2 - 1, zr: rnd(), sr: rnd(), ph: rnd() * 6.28 };
   });
 
   // stardust: fine particles drifting down through and around the cone
-  const DUST = { wide: 260, narrow: 110 };
-  const dust = Array.from({ length: DUST.wide }, () => ({ u: rnd(), lat: (rnd() * 2 - 1) * 0.95, z: lerp(-2.5, 1.2, rnd()), sp: lerp(0.4, 1.2, rnd()), ph: rnd() * 6.28, mag: lerp(0.3, 1, rnd()) }));
+  const dust = Array.from({ length: LIMITS.dust }, () => ({ u: rnd(), lat: (rnd() * 2 - 1) * 0.95, z: lerp(-2.5, 1.2, rnd()), sp: lerp(0.4, 1.2, rnd()), ph: rnd() * 6.28, mag: lerp(0.3, 1, rnd()) }));
   const dustGeo = new BufferGeometry();
-  dustGeo.setAttribute("position", new BufferAttribute(new Float32Array(DUST.wide * 3), 3));
-  dustGeo.setAttribute("color", new BufferAttribute(new Float32Array(DUST.wide * 3), 3));
+  dustGeo.setAttribute("position", new BufferAttribute(new Float32Array(LIMITS.dust * 3), 3));
+  dustGeo.setAttribute("color", new BufferAttribute(new Float32Array(LIMITS.dust * 3), 3));
   const dustMat = new PointsMaterial({ size: 0.05, map: dotTexture(), vertexColors: true, transparent: true, depthWrite: false, blending: AdditiveBlending, sizeAttenuation: true });
   const stardust = new Points(dustGeo, dustMat);
   stardust.renderOrder = -1;
@@ -142,13 +142,16 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
 
   function update({ s, t, still, wide, bounds: B, bc, bs }: { s: number; t: number; still: boolean; wide: boolean; bounds: Bounds; bc: Vector3; bs: number }) {
     // the source at the top right, the beam falling toward the middle bottom
-    if (wide) { E.set(B.cx + B.hw * 0.86, B.cy + B.hh * 1.16, -1.2); P1.set(B.cx - B.hw * 0.42, B.cy - B.hh * 1.6, -1.2); }
-    else { E.set(B.cx + B.hw * 0.9, B.cy + B.hh * 1.05, -1.2); P1.set(B.cx - B.hw * 0.35, B.cy - B.hh * 0.45, -1.2); }
+    // (phones: the same settings, scaled to their taller, narrower framing)
+    const nx = wide ? 1 : 1.047, ny = wide ? 1 : 0.905;
+    E.set(B.cx + B.hw * T.sourceX * nx, B.cy + B.hh * T.sourceHeight * ny, T.sourceDepth);
+    if (wide) P1.set(B.cx - B.hw * 0.42, B.cy - B.hh * 1.6, T.sourceDepth);
+    else P1.set(B.cx - B.hw * 0.35, B.cy - B.hh * 0.45, T.sourceDepth);
     dir.subVectors(P1, E);
-    const L = dir.length();
+    const L = dir.length() * T.beamLength;
     dir.normalize();
     perp.set(-dir.y, dir.x, 0);
-    const W1 = (wide ? 1.4 : 1.1) * B.hw, W0 = 0.05 * B.hw; // half-width of the cone at the bottom and at the source
+    const W1 = T.beamSpread * (wide ? 1 : 0.786) * B.hw, W0 = 0.05 * B.hw; // half-width of the cone at the bottom and at the source
     const halfAt = (u: number) => lerp(W0, W1, u);
     const tilt = Math.atan2(dir.y, dir.x) + Math.PI / 2;
 
@@ -167,33 +170,38 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
       m.scale.set(W1 * 2 * ext, L * ext, 1);
       const u = (m.material as ShaderMaterial).uniforms;
       u.uTime.value = t; u.uAlpha.value = fade; u.uW0.value = W0 / (W1 * ext);
+      u.uBody.value = T.beamOpacity; u.uCoreK.value = T.beamBrightness; u.uGlow.value = T.coreGlow;
     });
+    (beams[0].material as ShaderMaterial).uniforms.uColor.value.set(T.beamColor);
 
     // ---- aurora: on the beam's plane, inside the cone ----
     aurora.position.copy(beams[0].position).setZ(beams[0].position.z + 0.01);
     aurora.rotation.copy(beams[0].rotation);
     aurora.scale.copy(beams[0].scale);
     const au = (aurora.material as ShaderMaterial).uniforms;
-    au.uTime.value = t; au.uAlpha.value = fade; au.uW0.value = W0 / (W1 * ext);
+    au.uTime.value = t * T.auroraSpeed; au.uAlpha.value = fade; au.uW0.value = W0 / (W1 * ext);
+    au.uIntensity.value = T.auroraIntensity; au.uMix.value.set(T.auroraTeal, T.auroraViolet, T.auroraGold);
 
     // ---- envelopes: out of the source, fanning out with the cone ----
-    const count = wide ? MAX : 9;
+    const count = Math.min(LIMITS.envelopes, Math.max(1, Math.round(T.envelopeCount * (wide ? 1 : 0.56))));
     items.forEach((it, k) => {
       const featured = k === 0;
       if (k >= count) { it.env.setOpacity(0); return; }
-      const u = featured || still ? it.u0 : (it.u0 + t * 0.012) % 1;
+      const u0 = featured ? 0.5 : k / count + it.jit;
+      const u = featured || still ? u0 : (u0 + t * T.fallSpeed) % 1;
       const along = lerp(0.02, 0.98, u) * L;
       // never past half the cone's width, so even the largest envelope stays inside the light
-      pos.copy(E).addScaledVector(dir, along).addScaledVector(perp, it.lat * halfAt(u) * 0.45);
-      pos.z = lerp(E.z, lerp(-2.4, 0.9, (it.z + 4.5) / 5.9), Math.min(1, u * 1.6)); // close together at the source, a little depth as they fall
-      const sway = still ? 0 : 1;
+      pos.copy(E).addScaledVector(dir, along).addScaledVector(perp, it.lat * halfAt(u) * T.emitterSpread);
+      pos.z = lerp(E.z, lerp(T.depthFar, T.depthNear, it.zr), Math.min(1, u * 1.6)); // close together at the source, a little depth as they fall
+      const sway = still ? 0 : T.rotation;
       const g = it.env.g;
       g.position.copy(pos);
       g.position.y += Math.sin(t * 0.4 + it.ph) * 0.05 * sway * u;
       g.rotation.set(0.18 + Math.sin(t * 0.21 + it.ph) * 0.12 * sway, Math.sin(t * 0.17 + it.ph * 1.7) * 0.4 * sway, tilt * 0.35 + Math.sin(t * 0.13 + it.ph) * 0.08 * sway);
-      g.scale.setScalar(it.size * bs * lerp(0.35, 1, Math.min(1, u * 1.4))); // small as they emerge
+      const size = featured ? 0.62 : lerp(T.sizeMin, T.sizeMax, it.sr);
+      g.scale.setScalar(size * bs * lerp(0.35, 1, Math.min(1, u * 1.4))); // small as they emerge
       // lit by the beam: brighter near its axis
-      it.env.setLight(1 - Math.min(1, Math.abs(it.lat) * 0.5));
+      it.env.setLight(1 - Math.min(1, Math.abs(it.lat) * T.emitterSpread * 1.1));
       const ends = clamp01(u / 0.07) * clamp01((1 - u) / 0.1);
       if (featured) {
         if (!still && s > 0) {
@@ -210,7 +218,7 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
     });
 
     // ---- stardust ----
-    const nd = wide ? DUST.wide : DUST.narrow;
+    const nd = Math.min(LIMITS.dust, Math.round(T.dustCount * (wide ? 1 : 0.42)));
     dustGeo.setDrawRange(0, nd);
     const dp = dustGeo.attributes.position.array as Float32Array, dc = dustGeo.attributes.color.array as Float32Array;
     for (let i = 0; i < nd; i++) {
@@ -223,13 +231,13 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
       // catches the light inside the cone, faint outside it; twinkles as it turns
       const inBeam = 1 - clamp01((Math.abs(d.lat) - 0.7) / 0.3);
       const tw = still ? 1 : 0.6 + 0.4 * Math.sin(t * (1.1 + (i % 5) * 0.3) + d.ph);
-      const b = 1.5 * (0.2 + 0.8 * inBeam) * d.mag * tw * fade * clamp01(u / 0.05) * clamp01((1 - u) / 0.15) * (1.1 - 0.5 * u);
+      const b = T.dustBrightness * (0.2 + 0.8 * inBeam) * d.mag * tw * fade * clamp01(u / 0.05) * clamp01((1 - u) / 0.15) * (1.1 - 0.5 * u);
       dc.set([warm.r * b, warm.g * b, warm.b * b], i * 3);
     }
     dustGeo.attributes.position.needsUpdate = true;
     dustGeo.attributes.color.needsUpdate = true;
     dustGeo.computeBoundingSphere();
-    dustMat.size = 0.028 * B.hh;
+    dustMat.size = T.dustSize * B.hh;
   }
 
   return { update };

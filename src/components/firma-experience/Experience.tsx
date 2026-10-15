@@ -9,6 +9,7 @@ import { mountFlow } from "./flow";
 import { mountStory } from "./story";
 import { pageTop } from "./listen";
 import type { SceneApi } from "./ExperienceScene";
+import { TunePanel } from "./TunePanel";
 import "./experience.css";
 
 // WebGL only in the browser: the static export ships the page text, the scene mounts on the client.
@@ -21,7 +22,7 @@ type ScrollMode = keyof typeof SCROLL_NAMES;
 const LAYOUT_NAMES: Record<number, string> = { 1: "Zones", 2: "Ledger", 3: "Docked" };
 const OUTCOME_BEAT = 4, LANDS_AT = 4.5; // "Then the deal closes." (scene step 5); the outcome hits the envelope at 4.5
 
-type Config = { scroll: ScrollMode; layout: number; outcome: Outcome; treatment: string };
+type Config = { scroll: ScrollMode; layout: number; outcome: Outcome; treatment: string; tune: boolean };
 function readConfig(): Config {
   const q = new URLSearchParams(window.location.search);
   const s = q.get("scroll");
@@ -33,6 +34,8 @@ function readConfig(): Config {
     outcome: q.get("outcome") === "won" ? "won" : "lost",
     // wax seals are the chosen treatment; padlocks (a) and vault (c) stay reachable via ?chain= for reference
     treatment: c === "a" || c === "c" ? c : "b",
+    // ?tune=1: the hero tuning panel (for the team; normal visitors never see it)
+    tune: q.get("tune") === "1",
   };
 }
 
@@ -227,6 +230,8 @@ export function Experience() {
           </div>
         </section>
       </div>
+
+      {cfg?.tune && <TunePanel />}
 
       {/* review toggle: layout, scroll variant and outcome */}
       <div className="treat">
