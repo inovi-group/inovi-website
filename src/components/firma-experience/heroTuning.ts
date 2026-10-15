@@ -9,6 +9,8 @@ export const HERO_DEFAULTS = {
   sourceHeight: 2.0,     // height of the source above the scene's centre (about 1.25 is the top edge: above it, the
                          // source is off the page and the beam enters from above)
   sourceDepth: -1.2,     // distance of the beam behind (−) or in front of (+) the deal's plane
+  destX: -0.42,          // where the beam lands: horizontal (0 = scene centre, −1 = its left edge, 1 = its right edge)
+  destY: -1.6,           // how low it reaches (−1.25 is about the bottom edge of the hero)
   beamWidth: 0.12,       // half-width of the beam at its source
   beamSpread: 1.3,       // how much it widens going down (0 = a column with parallel sides)
   beamLength: 1.0,       // length of the beam (1 = from the source down to the middle bottom)
@@ -49,6 +51,8 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
     { key: "sourceX", label: "Source horizontal", min: -1.5, max: 3, step: 0.01 },
     { key: "sourceHeight", label: "Source height", min: 0.4, max: 5, step: 0.01 },
     { key: "sourceDepth", label: "Source distance (depth)", min: -6, max: 2, step: 0.05 },
+    { key: "destX", label: "Destination X", min: -2.5, max: 2.5, step: 0.01 },
+    { key: "destY", label: "Destination Y", min: -3.5, max: 0.5, step: 0.01 },
     { key: "beamWidth", label: "Beam width (at source)", min: 0.01, max: 2, step: 0.01 },
     { key: "beamSpread", label: "Beam spread (widening)", min: 0, max: 2.5, step: 0.01 },
     { key: "beamLength", label: "Beam length", min: 0.5, max: 1.8, step: 0.01 },

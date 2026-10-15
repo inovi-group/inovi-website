@@ -156,8 +156,8 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
     // (phones: the same settings, scaled to their taller, narrower framing)
     const nx = wide ? 1 : 1.047, ny = wide ? 1 : 0.905;
     E.set(B.cx + B.hw * T.sourceX * nx, B.cy + B.hh * T.sourceHeight * ny, T.sourceDepth);
-    if (wide) P1.set(B.cx - B.hw * 0.42, B.cy - B.hh * 1.6, T.sourceDepth);
-    else P1.set(B.cx - B.hw * 0.35, B.cy - B.hh * 0.45, T.sourceDepth);
+    // the destination: the beam's axis, the envelopes' fall paths and the dust all run from E to P1
+    P1.set(B.cx + B.hw * T.destX * (wide ? 1 : 0.833), B.cy + B.hh * T.destY * (wide ? 1 : 0.281), T.sourceDepth);
     dir.subVectors(P1, E);
     const L = dir.length() * T.beamLength;
     dir.normalize();
