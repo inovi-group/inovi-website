@@ -45,6 +45,14 @@ export const HERO_DEFAULTS = {
   pickX: 0,              // horizontal shift, in viewport widths (0 = where the story's deal sits)
   pickY: 0.52,           // vertical position, from the top of the viewport (0.5 = the middle)
   pickSize: 1.0,
+  // golden wake behind each envelope: short, closing fast to the centre line behind it
+  trailLength: 1.2,      // in envelope heights
+  trailTaper: 4.0,       // how fast the wake closes toward the middle (higher = narrower sooner)
+  trailCount: 18,        // particles per envelope (phones show about half)
+  trailSize: 0.03,
+  trailBrightness: 2.2,
+  trailFade: 0.45,       // how quickly the wake fades along its length (lower = fades sooner)
+  stampColor: "#8f1d2c", // Firma's wax seal, wherever it appears
   // stardust
   dustCount: 260,        // phones show about 40% of these
   dustSize: 0.028,
@@ -99,13 +107,24 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
     { key: "pickY", label: "Vertical (from top)", min: 0.2, max: 0.85, step: 0.005 },
     { key: "pickSize", label: "Size", min: 0.4, max: 2.5, step: 0.01 },
   ] },
+  { group: "Golden wake (per envelope)", items: [
+    { key: "trailLength", label: "Trail length", min: 0, max: 4, step: 0.05 },
+    { key: "trailTaper", label: "Convergence / taper", min: 0, max: 12, step: 0.1 },
+    { key: "trailCount", label: "Particles per envelope", min: 0, max: 40, step: 1 },
+    { key: "trailSize", label: "Particle size", min: 0.004, max: 0.05, step: 0.001 },
+    { key: "trailBrightness", label: "Brightness", min: 0, max: 3, step: 0.05 },
+    { key: "trailFade", label: "Fade time", min: 0.05, max: 2, step: 0.01 },
+  ] },
+  { group: "Firma stamp", items: [
+    { key: "stampColor", label: "Stamp colour" },
+  ] },
   { group: "Stardust", items: [
     { key: "dustCount", label: "Count", min: 0, max: 800, step: 10 },
     { key: "dustSize", label: "Size", min: 0.005, max: 0.08, step: 0.001 },
     { key: "dustBrightness", label: "Brightness", min: 0, max: 4, step: 0.05 },
   ] },
 ];
-export const LIMITS = { envelopes: 32, dust: 800 }; // the most the scene allocates
+export const LIMITS = { envelopes: 32, dust: 800, trail: 40 }; // the most the scene allocates
 
 // the live values the scene reads; the panel writes into this object
 export const heroTune: HeroTune = { ...HERO_DEFAULTS };

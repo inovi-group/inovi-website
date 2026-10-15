@@ -1,5 +1,6 @@
 import {
   type PerspectiveCamera,
+  type MeshBasicMaterial,
   AdditiveBlending,
   NormalBlending,
   BufferAttribute,
@@ -16,7 +17,8 @@ import {
   Vector3,
   type Texture,
 } from "three";
-import { makeEnvelope } from "./envelope";
+import { ENV, makeEnvelope } from "./envelope";
+const ENV_H = ENV.h, ENV_W = ENV.w;
 import { heroTune as T, LIMITS } from "./heroTuning";
 
 /**
@@ -157,6 +159,18 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
   stardust.renderOrder = -1;
   hero.add(stardust);
 
+  // the golden wake: a few particles per envelope, streaming back from it and closing fast to its centre line
+  const NT = LIMITS.envelopes * LIMITS.trail;
+  const wake = Array.from({ length: NT }, () => ({ side: rnd() < 0.5 ? -1 : 1, jit: rnd(), sp: lerp(0.6, 1.4, rnd()), ph: rnd() }));
+  const trailGeo = new BufferGeometry();
+  trailGeo.setAttribute("position", new BufferAttribute(new Float32Array(NT * 3), 3));
+  trailGeo.setAttribute("color", new BufferAttribute(new Float32Array(NT * 3), 3));
+  const trailMat = new PointsMaterial({ size: 0.02, map: dotTexture(), vertexColors: true, transparent: true, depthWrite: false, blending: AdditiveBlending, sizeAttenuation: true });
+  const trail = new Points(trailGeo, trailMat);
+  trail.renderOrder = -0.5;
+  hero.add(trail);
+  const gold = new Color("#ffcf6a"), back = new Vector3(), side = new Vector3(), tmpV = new Vector3();
+
   const E = new Vector3(), P1 = new Vector3(), dir = new Vector3(), perp = new Vector3(), pos = new Vector3(), mid = new Vector3();
   const warm = new Color("#ffe2a8");
 
@@ -293,6 +307,41 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
         it.env.setOpacity(it.ends * fade);
       }
     });
+
+    // ---- golden wake: behind each envelope (back up its path), a V that closes to the centre line quickly ----
+    const per = Math.min(LIMITS.trail, Math.round(T.trailCount * (wide ? 1 : 0.5)));
+    const tp = trailGeo.attributes.position.array as Float32Array, tc = trailGeo.attributes.color.array as Float32Array;
+    back.copy(dir).negate();
+    let n = 0;
+    items.forEach((it, k) => {
+      if (k >= count || per === 0) return;
+      const g = it.env.g;
+      const a0 = g.visible ? (it.env.box.material as MeshBasicMaterial[])[4].opacity : 0;
+      const away = k === picked ? 1 - pick : 1; // the picked one leaves its wake behind as it comes forward
+      if (a0 * away < 0.01) return;
+      const h = ENV_H * g.scale.x, wHalf = ENV_W * 0.5 * g.scale.x;
+      // the wake trails along the envelope's own fall line, in the plane of the beam
+      side.copy(perp);
+      for (let i = 0; i < per; i++) {
+        const w = wake[k * LIMITS.trail + i];
+        // a: 0 at the envelope's back edge, 1 at the end of the wake; particles stream back along it
+        const a = still ? (i + w.jit) / per : ((i + w.jit) / per + t * 0.35 * w.sp) % 1;
+        const d = h * 0.45 + a * T.trailLength * h;
+        const spread = wHalf * Math.exp(-T.trailTaper * a) * (0.55 + 0.45 * w.jit); // closes fast toward the middle
+        tmpV.copy(g.position).addScaledVector(back, d).addScaledVector(side, w.side * spread);
+        tmpV.z -= 0.02;
+        tp.set([tmpV.x, tmpV.y, tmpV.z], n * 3);
+        const tw = still ? 1 : 0.75 + 0.25 * Math.sin(t * 3 + w.ph * 20);
+        const b = T.trailBrightness * Math.exp(-a / Math.max(0.05, T.trailFade)) * a0 * away * tw;
+        tc.set([gold.r * b, gold.g * b, gold.b * b], n * 3);
+        n++;
+      }
+    });
+    trailGeo.setDrawRange(0, n);
+    trailGeo.attributes.position.needsUpdate = true;
+    trailGeo.attributes.color.needsUpdate = true;
+    trailGeo.computeBoundingSphere();
+    trailMat.size = T.trailSize * B.hh;
 
     // ---- stardust ----
     const nd = Math.min(LIMITS.dust, Math.round(T.dustCount * (wide ? 1 : 0.42)));

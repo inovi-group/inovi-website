@@ -35,6 +35,7 @@ import {
 import type { StoryData, Score, Reality, Decision, ChainRecord } from "./content";
 import { createMonth } from "./monthScene";
 import { createHero } from "./heroScene";
+import { heroTune } from "./heroTuning";
 import { ENV, drawEnvelopeFace, envelopeOutline, makeEnvelope } from "./envelope";
 
 export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
@@ -77,6 +78,8 @@ type RecState = "sealed" | "verified" | "forged" | "broken";
 // One calm composition, nothing behind it: the X-ray box (scores, reality, decision) and, beside it,
 // the FIRMA chain that each score, the outcome and the decision are sealed into as they happen.
 const GOLD = new Color("#d9a34a");
+// Firma's wax seal colour, everywhere it appears (tunable: heroTune.stampColor)
+const SEAL = new Color("#8f1d2c");
 const IDLE = new Color("#6f7b90");
 const OK = new Color("#46b876"), BAD = new Color("#ef5a4c"), REAL = new Color("#c9d2e3");
 const SLAB = { w: 2.4, h: 0.14, d: 1.6, gap: 0.42 };
@@ -547,7 +550,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     const g = new Group();
     const halves = [0, 1].map((side) => {
       const m = new Mesh(new CircleGeometry(0.15, 40, side ? -Math.PI / 2 : Math.PI / 2, Math.PI),
-        new MeshBasicMaterial({ map: waxTex, color: GOLD.clone(), transparent: true }));
+        new MeshBasicMaterial({ map: waxTex, color: SEAL.clone(), transparent: true }));
       g.add(m);
       return m;
     });
@@ -561,7 +564,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
           const dir = i ? 1 : -1;
           h.position.x = dir * brk * 0.05; h.position.y = -brk * 0.02 * (i ? 1 : -1);
           h.rotation.z = dir * brk * -0.28;
-          h.material.color.copy(GOLD).lerp(OK, ver * 0.55).lerp(BAD, brk);
+          h.material.color.copy(SEAL).lerp(OK, ver * 0.55).lerp(BAD, brk);
           h.material.opacity = alpha * clamp01(lock * 2.5);
         });
       },
@@ -868,6 +871,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   // Story steps: 0 the hero stream, 0–1 one envelope is picked out and scanned, 1–9 the deal's own timeline
   // (scores, outcome, judging, decision, verify, rewrite attempt), 9–11 the month end and the report.
   function update({ step: s, t, dt, still }: FrameCtx) {
+    SEAL.set(heroTune.stampColor);
     const step = Math.min(Math.max(s - 1, 0), 8);
     const P = LAYOUTS[layoutId][view.wide ? "wide" : "narrow"];
     const BS = P.box, BC = P.bc;
