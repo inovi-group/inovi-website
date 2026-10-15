@@ -39,11 +39,29 @@ export function drawEnvelopeFace(cv: HTMLCanvasElement, opts: { label?: string; 
   // faint address lines, bottom left
   c.fillStyle = "rgba(201,210,227,0.16)";
   [0.72, 0.79, 0.86].forEach((y, i) => c.fillRect(W * 0.08, H * y, W * (0.3 - i * 0.06), H * 0.018));
+  // a small handshake, pressed into the bottom right corner: this envelope is a deal
+  handshake(c, W * 0.85, H * 0.8, H * 0.15, "rgba(201,210,227,0.45)");
   if (opts.label) {
     c.fillStyle = "rgba(217,163,74,0.75)"; c.font = `600 ${Math.round(H * 0.07)}px ${opts.mono ?? "monospace"}`;
     c.fillText(opts.label, W * 0.08, H * 0.66);
   }
   c.strokeStyle = "rgba(201,210,227,0.28)"; c.lineWidth = W * 0.008; c.strokeRect(1, 1, W - 2, H - 2);
+}
+
+// A minimal line handshake (two forearms meeting in a clasp), centred at (x, y), about s wide.
+function handshake(c: CanvasRenderingContext2D, x: number, y: number, s: number, col: string) {
+  c.save();
+  c.translate(x, y); c.scale(s / 100, s / 100);
+  c.strokeStyle = col; c.lineWidth = 7; c.lineCap = "round"; c.lineJoin = "round";
+  c.beginPath();
+  // left sleeve and hand, reaching up to the clasp
+  c.moveTo(-50, 18); c.lineTo(-28, 0); c.lineTo(-8, -10); c.quadraticCurveTo(4, -14, 14, -6);
+  // right sleeve and hand, its fingers folding over
+  c.moveTo(50, 18); c.lineTo(28, 0); c.lineTo(10, 4); c.quadraticCurveTo(-4, 8, -12, 2);
+  // the knuckles of the clasp
+  c.moveTo(-2, 10); c.lineTo(6, 16); c.moveTo(6, 6); c.lineTo(14, 12);
+  c.stroke();
+  c.restore();
 }
 
 // A 3D envelope: box with the paper face in front, darker paper elsewhere, crisp edges, and an optional seal.
@@ -67,6 +85,12 @@ export function makeEnvelope(face: Texture, seal?: Emblem) {
   const mats = [side, back, front];
   return {
     g, box, edges, seal,
+    // lit by a light beam: the paper brightens and warms (0 = unlit)
+    setLight(k: number) {
+      front.color.setRGB(1 + 0.75 * k, 1 + 0.6 * k, 1 + 0.35 * k);
+      side.color.setRGB(0.06 + 0.1 * k, 0.08 + 0.08 * k, 0.11 + 0.05 * k);
+      (edges.material as LineBasicMaterial).color.setRGB(0.34 + 0.45 * k, 0.39 + 0.35 * k, 0.48 + 0.15 * k);
+    },
     setOpacity(a: number) {
       mats.forEach((m) => { m.opacity = a; m.depthWrite = a > 0.98; });
       (edges.material as LineBasicMaterial).opacity = 0.9 * a;
