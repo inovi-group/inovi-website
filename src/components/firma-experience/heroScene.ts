@@ -37,7 +37,7 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 type Emblem = { g: Group; set(lock: number, ver: number, brk: number, alpha: number): void };
 type Bounds = { cx: number; cy: number; hw: number; hh: number };
-type Item = { env: ReturnType<typeof makeEnvelope>; jit: number; lat: number; zr: number; sr: number; ph: number; off: number; u: number; ends: number; size: number };
+type Item = { env: ReturnType<typeof makeEnvelope>; jit: number; lat: number; zr: number; sr: number; ph: number; off: number; u: number; ends: number; size: number; cycle: number; delays: number };
 
 export const PICK_END = 0.45; // by here the featured envelope has arrived and the deal's own envelope takes over
 
@@ -163,9 +163,9 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
   const items: Item[] = Array.from({ length: LIMITS.envelopes }, () => {
     const env = makeEnvelope(face, makeSeal());
     hero.add(env.g);
-    return { env, jit: rnd() * 0.04, lat: rnd() * 2 - 1, zr: rnd(), sr: rnd(), ph: rnd() * 6.28, off: 0, u: 0, ends: 0, size: 0 };
+    return { env, jit: rnd() * 0.04, lat: rnd() * 2 - 1, zr: rnd(), sr: rnd(), ph: rnd() * 6.28, off: 0, u: 0, ends: 0, size: 0, cycle: 0, delays: 0 };
   });
-  let picked = -1, pickedU = 0;
+  let picked = -1, pickedU = 0, spawnKey = "";
 
   // stardust: fine particles drifting down through and around the cone
   const dust = Array.from({ length: LIMITS.dust }, () => ({ u: rnd(), lat: (rnd() * 2 - 1) * 0.95, z: lerp(-2.5, 1.2, rnd()), sp: lerp(0.4, 1.2, rnd()), ph: rnd() * 6.28, mag: lerp(0.3, 1, rnd()) }));
@@ -255,16 +255,67 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
     // ---- envelopes: out of the source, fanning out with the cone ----
     const count = Math.min(LIMITS.envelopes, Math.max(1, Math.round(T.envelopeCount * (wide ? 1 : 0.56))));
     const uEnd = T.fadeStart + T.fadeLength;
-    const flowU = (it: Item, k: number) => {
-      const u0 = (k / count + it.jit) * uEnd + it.off;
-      return still ? ((u0 % uEnd) + uEnd) % uEnd : (((u0 + t * T.fallSpeed) % uEnd) + uEnd) % uEnd;
+    const rawU = (it: Item, k: number) => (k / count + it.jit) * uEnd + it.off + (still ? 0 : t * T.fallSpeed);
+    const flowU = (it: Item, k: number) => ((rawU(it, k) % uEnd) + uEnd) % uEnd;
+
+    // ---- spawn spacing: no envelope starts right next to another ----
+    // They all fall at the same speed, so two envelopes that start close (along the path and across it) stay
+    // close. Their separation is measured where they are fully in view (60% down the beam), across the path,
+    // along it (cyclic) and in depth; minimum: the slider, in widths of the largest envelope.
+    const halfRef = halfAt(0.6) * T.emitterSpread, depthSpan = T.depthNear - T.depthFar;
+    const dMin = T.minSpawnDistance * ENV_W * T.sizeMax * bs;
+    const sep = (a: Item, ua: number, b: Item, ub: number) => {
+      let du = Math.abs(ua - ub); du = Math.min(du, uEnd - du);
+      return Math.hypot(du * L, (a.lat - b.lat) * halfRef, (a.zr - b.zr) * depthSpan * 0.5);
     };
+    // try a few starting spots (side and depth) and keep the first that is clear, else the most open one
+    const place = (k: number, u: number, others: number[]) => {
+      const it = items[k];
+      let best = { lat: it.lat, zr: it.zr, d: -1 };
+      for (let tries = 0; tries < 16; tries++) {
+        it.lat = rnd() * 2 - 1; it.zr = rnd();
+        let d = Infinity;
+        for (const j of others) d = Math.min(d, sep(it, u, items[j], items[j].u));
+        if (d > best.d) best = { lat: it.lat, zr: it.zr, d };
+        if (d >= dMin) break;
+      }
+      it.lat = best.lat; it.zr = best.zr;
+      return best.d >= dMin;
+    };
+    const layoutKey = `${count}|${uEnd.toFixed(3)}|${T.emitterSpread}|${T.minSpawnDistance}|${T.sizeMax}|${wide}`;
+    if (layoutKey !== spawnKey && picked < 0) {
+      // the starting configuration: each envelope placed clear of the ones placed before it
+      spawnKey = layoutKey;
+      const placed: number[] = [];
+      for (let k = 0; k < count; k++) {
+        const it = items[k];
+        it.off = 0; it.delays = 0;
+        it.u = flowU(it, k);
+        place(k, it.u, placed);
+        it.cycle = Math.floor(rawU(it, k) / uEnd);
+        placed.push(k);
+      }
+    }
+    for (let k = 0; k < count; k++) items[k].u = k === picked ? pickedU : flowU(items[k], k);
+    if (!still) {
+      for (let k = 0; k < count; k++) {
+        if (k === picked) continue;
+        const it = items[k], cyc = Math.floor(rawU(it, k) / uEnd);
+        if (cyc === it.cycle) continue;
+        // it has wrapped round to the source: respawn it somewhere clear, or hold it back a moment (it waits
+        // unseen at the far end of its path) and try again, rather than spawn in a cluster
+        const others = [];
+        for (let j = 0; j < count; j++) if (j !== k) others.push(j);
+        it.sr = rnd(); it.ph = rnd() * 6.28;
+        if (place(k, it.u, others) || it.delays >= 6) { it.cycle = cyc; it.delays = 0; }
+        else { it.off -= 0.012 * uEnd; it.delays++; it.u = flowU(it, k); }
+      }
+    }
     // the stream: every envelope falls along the beam (u: distance along the path in beam lengths; they keep
     // falling past the beam's end until they have faded)
     items.forEach((it, k) => {
       if (k >= count) { it.env.setOpacity(0); return; }
-      const u = k === picked ? pickedU : flowU(it, k); // the picked one stops where it was taken from the stream
-      it.u = u;
+      const u = it.u; // the picked one stops where it was taken from the stream
       const along = lerp(0.02, 0.98, u) * L;
       pos.copy(E).addScaledVector(dir, along).addScaledVector(perp, it.lat * halfAt(u) * T.emitterSpread);
       pos.z = lerp(E.z, lerp(T.depthFar, T.depthNear, it.zr), Math.min(1, u * 1.6)); // close together at the source, a little depth as they fall
@@ -287,6 +338,7 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
       const it = items[picked];
       it.off = 0;
       it.off = pickedU - flowU(it, picked);
+      it.cycle = Math.floor(rawU(it, picked) / uEnd); // carrying on from where it stands is not a respawn
       picked = -1;
     }
     if (s > 0.001 && picked < 0) {

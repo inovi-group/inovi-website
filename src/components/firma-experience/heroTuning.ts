@@ -41,6 +41,7 @@ export const HERO_DEFAULTS = {
   depthNear: 0.9,        // depth range the stream spreads over as it falls
   depthFar: -2.4,
   rotation: 1.0,         // amount of gentle turning (0 = none)
+  minSpawnDistance: 1.0, // no envelope starts closer than this to another, in widths of the largest envelope
   // the featured envelope, while it is picked out and scanned (then it glides into the story's place)
   pickX: 0,              // horizontal shift, in viewport widths (0 = where the story's deal sits)
   pickY: 0.52,           // vertical position, from the top of the viewport (0.5 = the middle)
@@ -98,6 +99,7 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
     { key: "depthNear", label: "Depth near", min: -3, max: 3, step: 0.05 },
     { key: "depthFar", label: "Depth far", min: -8, max: 1, step: 0.05 },
     { key: "rotation", label: "Rotation amount", min: 0, max: 3, step: 0.05 },
+    { key: "minSpawnDistance", label: "Min spawn distance", min: 0, max: 3, step: 0.05 },
   ] },
   { group: "Featured envelope (pick & scan)", items: [
     { key: "pickX", label: "Horizontal shift", min: -0.4, max: 0.4, step: 0.005 },
