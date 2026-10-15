@@ -665,6 +665,22 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   const vault = new LineSegments(new EdgesGeometry(new BoxGeometry(1, 1, 1)), new LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0, depthWrite: false }));
   root.add(vault);
 
+  // Firma's side of the view, in one group: at month end it steps out of the deal (the month's deals are plain
+  // cards; the one Firma record is the report), and it is back for verify and the rewrite attempt.
+  const firmaSide = new Group();
+  root.add(firmaSide);
+  firmaSide.add(...recs.flatMap((rc) => [rc.g, rc.ghost, rc.token, rc.trail]), ...links.flatMap((l) => [l.line, l.node]), zones.firma, divider, gateFlash, vault);
+  const fadeFirma = (f: number) => {
+    firmaSide.visible = f > 0.005;
+    if (f >= 0.999 || !firmaSide.visible) return;
+    firmaSide.traverse((o) => {
+      const mat = (o as Mesh).material as (MeshBasicMaterial | ShaderMaterial) | undefined;
+      if (!mat) return;
+      if ("uniforms" in mat && mat.uniforms?.uOpacity) mat.uniforms.uOpacity.value *= f;
+      else mat.opacity *= f;
+    });
+  };
+
   const redraw = () => {
     month.redraw();
     drawWax(waxCv); waxTex.needsUpdate = true; // the seal's letter needs the web font too
@@ -1124,7 +1140,10 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     vault.material.color.copy(tmpC);
     vault.material.opacity = 0.25 + 0.45 * Math.max(verifiedAt(recs.length - 1), tp);
     monthStep = s;
-    month.update({ s, t, still, wide: view.wide, bounds: P.bounds });
+    // after this frame's opacities are set: Firma fades out of the deal view for the month end, then back
+    fadeFirma(1 - (s < 7 ? phase(s, 5.05, 5.45) : 1 - phase(s, 8.35, 8.85)));
+    const dz = P.zones.deal;
+    month.update({ s, t, still, wide: view.wide, bounds: P.bounds, zone: { cx: dz.cx, cy: dz.cy, w: dz.w, h: dz.h } });
   }
   return {
     update,

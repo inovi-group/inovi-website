@@ -37,12 +37,12 @@ export type Month = {
 export type StoryData = { scores: Score[]; reality: Reality; decision: Decision; records: ChainRecord[]; tamper: Tamper; month: Month };
 
 export const MONTH_MAIN = 5; // the story's deal sits in the middle row of the month grid
-// The rest of the month for the "lost" story: [Provider A, Provider B, rep] win likelihoods and the result.
+// The rest of the month's closed deals for the "lost" story: [Provider A, Provider B, rep] win likelihoods and the result.
 // For the "won" story Provider A and B swap, so the month backs whichever provider called this deal.
 const OTHERS: [number[], Outcome | "open"][] = [
   [[0.74, 0.66, 0.8], "won"], [[0.71, 0.22, 0.7], "lost"], [[0.62, 0.31, 0.4], "lost"], [[0.35, 0.72, 0.85], "won"],
   [[0.8, 0.19, 0.75], "lost"], [[0.68, 0.41, 0.6], "won"], [[0.44, 0.26, 0.55], "lost"], [[0.77, 0.58, 0.65], "lost"],
-  [[0.58, 0.81, 0.7], "won"], [[0.7, 0.35, 0.8], "open"], [[0.3, 0.62, 0.5], "open"],
+  [[0.58, 0.81, 0.7], "won"], [[0.7, 0.35, 0.8], "won"], [[0.3, 0.62, 0.5], "won"],
 ];
 
 function chainFor(scores: Score[], outcome: Outcome): ChainRecord[] {
@@ -155,8 +155,8 @@ export const STEPS: [idx: string, headline: string, what: string, why: string][]
     "Each sealed score is compared with what really happened. Which source called it, which was overconfident, which was only ever a default.",
     "Trust is earned on outcomes, tested on the record, not on a vendor's claims or anyone's memory."],
   ["02 · The whole month", "Every deal, checked the same way.",
-    "Zoom out and this deal is one of many. Every deal in the month's pipeline has its own scores, its own outcome and its own sealed chain.",
-    "One deal is an anecdote. A whole month of checked deals is evidence."],
+    "Zoom out and this deal is one of many. At month end Firma collects every deal that closed, won or lost, to check the month's scores against them.",
+    "One deal is an anecdote. A whole month of outcomes is evidence."],
   ["03 · The report", "It all goes into one report.",
     "At month end, every checked deal is gathered into a single report, and the report is sealed into the record like everything else.",
     "One place to look, instead of a dozen dashboards that disagree."],
