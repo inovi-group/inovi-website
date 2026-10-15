@@ -1,182 +1,155 @@
 import {
   AdditiveBlending,
-  BoxGeometry,
   BufferAttribute,
   BufferGeometry,
-  CircleGeometry,
+  CanvasTexture,
   Color,
-  EdgesGeometry,
   Group,
-  IcosahedronGeometry,
   LineBasicMaterial,
   LineSegments,
-  Mesh,
-  MeshBasicMaterial,
-  PlaneGeometry,
   Points,
   PointsMaterial,
+  SRGBColorSpace,
   Vector3,
-  type ShaderMaterial,
-  type Texture,
 } from "three";
 
 /**
- * The hero background: a calm network of gold cores joined by thin lines. Around each core a deal slowly
- * forms (its box, three score tags, a seal), holds, and dissolves again, each on its own rhythm.
- * One node is the featured deal itself (the deal composition, shrunk onto it): as the visitor scrolls
- * (story step 0 → 1) it comes forward and becomes the deal view while the rest of the network recedes.
- * Reduced motion: the clusters stay formed and still, and the network simply fades as the deal arrives.
+ * The hero background: constellations. Small glowing gold stars spread across the whole view, a few groups of
+ * them joined by thin, faint lines, the rest scattered. Slow drift and a gentle twinkle; nothing else.
+ * One star is the featured deal and looks exactly like the others. As the visitor scrolls (story step 0 → 1)
+ * it brightens, the deal grows out of it, and the rest of the sky recedes.
+ * Reduced motion: a still sky that fades as the deal arrives.
  */
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const win = (x: number, a: number, b: number) => ease(clamp01((x - a) / (b - a)));
 
-const GOLD = new Color("#d9a34a");
-const TAG = [new Color("#46b876"), new Color("#ef5a4c"), new Color("#94a0b4")];
-// node offsets from the featured deal, in world units; wide screens spread sideways, phones upward and down
-const SPREAD = {
-  wide: [[-3.6, 1.9, -1.2], [-4.9, -1.3, -2.0], [-2.2, -2.2, -0.6], [2.7, 2.3, -1.6], [4.6, 0.3, -1.0], [3.1, -2.3, -2.2], [0.9, 3.1, -2.6], [6.4, -1.9, -2.8]],
-  narrow: [[-1.7, 3.3, -1.2], [1.8, 4.6, -2.0], [2.1, 1.6, -0.8], [-2.0, -1.9, -1.0], [1.7, -3.2, -1.6], [-1.2, -4.8, -2.4], [0.4, 6.4, -2.8]],
+const STAR = new Color("#e8b864"), PALE = new Color("#fff1d2");
+// constellation centres in the visible area's normalised space ([-1, 1] each way); the first is the featured one
+const CENTRES = {
+  wide: [[0, 0], [-0.72, 0.58], [-0.5, -0.62], [0.52, 0.66], [0.8, -0.32], [0.08, 0.86], [-0.88, -0.05], [0.34, -0.78]],
+  narrow: [[0, 0], [-0.55, 0.72], [0.55, 0.42], [-0.5, -0.5], [0.5, -0.78], [0.15, 0.92]],
 } as const;
-const LOOP = 11; // seconds for a deal to form, hold and dissolve around its core
+const LONE = { wide: 26, narrow: 14 };
 
-type Node = {
-  g: Group; core: Mesh; wire: LineSegments; box: LineSegments; tags: Mesh[]; seal: Mesh;
-  phase: number; off: Vector3;
-};
+function glowTexture(hard: boolean) {
+  const cv = Object.assign(document.createElement("canvas"), { width: 64, height: 64 });
+  const c = cv.getContext("2d")!, g = c.createRadialGradient(32, 32, 0, 32, 32, 32);
+  if (hard) { g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.35, "rgba(255,255,255,0.6)"); g.addColorStop(1, "rgba(255,255,255,0)"); }
+  else { g.addColorStop(0, "rgba(255,255,255,0.55)"); g.addColorStop(0.25, "rgba(255,255,255,0.18)"); g.addColorStop(1, "rgba(255,255,255,0)"); }
+  c.fillStyle = g; c.fillRect(0, 0, 64, 64);
+  const t = new CanvasTexture(cv); t.colorSpace = SRGBColorSpace;
+  return t;
+}
 
-export function createHero(opts: { parent: Group; deal: Group; glass: (c: Color, o?: number) => ShaderMaterial; waxTex: Texture }) {
-  const { parent, deal, glass, waxTex } = opts;
-  const net = new Group();
-  parent.add(net);
+type Star = { base: Vector3; pos: Vector3; mag: number; tw: number; featured: boolean };
+export type HeroView = { cx: number; cy: number; hw: number; hh: number };
 
-  const coreGeo = new IcosahedronGeometry(0.4, 3);
-  const wireGeo = new EdgesGeometry(new IcosahedronGeometry(0.44, 1));
-  const boxGeo = new EdgesGeometry(new BoxGeometry(2.9, 1.8, 2.0));
-  const tagGeo = new PlaneGeometry(0.9, 0.22);
-  const sealGeo = new CircleGeometry(0.2, 32);
-  const additive = { transparent: true, depthWrite: false, blending: AdditiveBlending } as const;
-
-  const makeNode = (k: number): Node => {
-    const g = new Group();
-    const core = new Mesh(coreGeo, glass(GOLD, 1.2));
-    (core.material as ShaderMaterial).uniforms.uGrid.value = 0;
-    const wire = new LineSegments(wireGeo, new LineBasicMaterial({ color: GOLD, opacity: 0.9, ...additive }));
-    const box = new LineSegments(boxGeo, new LineBasicMaterial({ color: GOLD, opacity: 0, transparent: true, depthWrite: false }));
-    const tags = TAG.map((c) => new Mesh(tagGeo, new MeshBasicMaterial({ color: c, transparent: true, opacity: 0, depthWrite: false })));
-    const seal = new Mesh(sealGeo, new MeshBasicMaterial({ map: waxTex, color: GOLD, transparent: true, opacity: 0, depthWrite: false }));
-    g.add(core, wire, box, ...tags, seal);
-    net.add(g);
-    return { g, core, wire, box, tags, seal, phase: (k * 0.37) % 1, off: new Vector3() };
-  };
-  // one spare node stands in for the featured deal when motion is reduced (the deal itself is not shrunk then)
-  const nodes = Array.from({ length: 1 + Math.max(SPREAD.wide.length, SPREAD.narrow.length) }, (_, k) => makeNode(k));
-
-  // the network's lines (and a few slow sparks travelling along them), rebuilt when the layout changes
-  const lineMat = new LineBasicMaterial({ color: GOLD, opacity: 0.22, ...additive });
+export function createHero(opts: { parent: Group; deal: Group }) {
+  const { parent, deal } = opts;
+  const sky = new Group();
+  parent.add(sky);
+  const add = { transparent: true, depthWrite: false, blending: AdditiveBlending, vertexColors: true, sizeAttenuation: true } as const;
+  const haloMat = new PointsMaterial({ size: 0.9, map: glowTexture(false), ...add });
+  const coreMat = new PointsMaterial({ size: 0.22, map: glowTexture(true), ...add });
+  const halos = new Points(new BufferGeometry(), haloMat);
+  const cores = new Points(new BufferGeometry(), coreMat);
+  const lineMat = new LineBasicMaterial({ color: STAR, transparent: true, opacity: 0.16, depthWrite: false, blending: AdditiveBlending });
   const lines = new LineSegments(new BufferGeometry(), lineMat);
-  net.add(lines);
-  const sparkMat = new PointsMaterial({ color: "#ffd27a", size: 0.07, opacity: 0.8, sizeAttenuation: true, ...additive });
-  const sparks = new Points(new BufferGeometry(), sparkMat);
-  net.add(sparks);
-  let edges: [number, number][] = [];
+  sky.add(lines, halos, cores);
+
+  let stars: Star[] = [];
+  let links: [number, number][] = [];
   let key = "";
+  const F = new Vector3(), col = new Color();
 
-  const F = new Vector3(), tmp = new Vector3();
-
-  function layout(spread: readonly (readonly number[])[], featured: Vector3) {
-    // node 0 is the featured deal; the others sit around it
-    nodes.forEach((n, k) => {
-      const o = k === 0 ? [0, 0, 0] : spread[k - 1];
-      n.g.visible = !!o;
-      if (o) n.off.set(o[0], o[1], o[2]);
-    });
-    const live = nodes.map((n, k) => (n.g.visible ? k : -1)).filter((k) => k >= 0);
-    // each node links to its two nearest neighbours; the featured deal to its three nearest
-    const set = new Set<string>();
-    edges = [];
-    for (const a of live) {
-      const near = live.filter((b) => b !== a).sort((x, y) => nodes[x].off.distanceTo(nodes[a].off) - nodes[y].off.distanceTo(nodes[a].off));
-      for (const b of near.slice(0, a === 0 ? 3 : 2)) {
-        const id = a < b ? `${a}-${b}` : `${b}-${a}`;
-        if (!set.has(id)) { set.add(id); edges.push([a, b]); }
-      }
-    }
-    lines.geometry.setAttribute("position", new BufferAttribute(new Float32Array(edges.length * 6), 3));
-    sparks.geometry.setAttribute("position", new BufferAttribute(new Float32Array(edges.length * 3), 3));
+  // a seeded sky, so it is the same sky on every visit
+  function build(wide: boolean, v: HeroView, featured: Vector3) {
+    let seed = 20261;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    stars = []; links = [];
     F.copy(featured);
+    const toWorld = (nx: number, ny: number, z: number) => new Vector3(v.cx + nx * v.hw, v.cy + ny * v.hh, z);
+    const fx = (featured.x - v.cx) / v.hw, fy = (featured.y - v.cy) / v.hh;
+    (wide ? CENTRES.wide : CENTRES.narrow).forEach(([cx0, cy0], k) => {
+      // the featured constellation is drawn through the featured star
+      const cx = k === 0 ? fx : cx0, cy = k === 0 ? fy : cy0;
+      const n = 4 + Math.floor(rnd() * 3), step = wide ? 0.13 : 0.2;
+      let x = cx, y = cy, ang = rnd() * Math.PI * 2;
+      const first = stars.length;
+      for (let i = 0; i < n; i++) {
+        const featuredStar = k === 0 && i === 0;
+        const z = featuredStar ? 0 : -0.5 - rnd() * 2;
+        stars.push({ base: featuredStar ? featured.clone() : toWorld(x, y, z), pos: new Vector3(), mag: 0.75 + rnd() * 0.35, tw: rnd() * 6.28, featured: featuredStar });
+        if (i > 0) links.push([first + i - 1, first + i]);
+        if (i === 3 && n > 4 && rnd() > 0.4) links.push([first + 1, first + i]); // an occasional branch
+        ang += (rnd() - 0.5) * 1.6;
+        x += Math.cos(ang) * step * (0.8 + rnd() * 0.6) * (wide ? 0.62 : 1);
+        y += Math.sin(ang) * step * (0.8 + rnd() * 0.6);
+      }
+    });
+    for (let i = 0; i < LONE[wide ? "wide" : "narrow"]; i++) {
+      stars.push({ base: toWorld(rnd() * 2.1 - 1.05, rnd() * 2.1 - 1.05, -1 - rnd() * 3), pos: new Vector3(), mag: 0.35 + rnd() * 0.35, tw: rnd() * 6.28, featured: false });
+    }
+    const n = stars.length;
+    for (const p of [halos, cores]) {
+      p.geometry.setAttribute("position", new BufferAttribute(new Float32Array(n * 3), 3));
+      p.geometry.setAttribute("color", new BufferAttribute(new Float32Array(n * 3), 3));
+    }
+    lines.geometry.setAttribute("position", new BufferAttribute(new Float32Array(links.length * 6), 3));
   }
 
-  function update({ s, t, still, wide, featured }: { s: number; t: number; still: boolean; wide: boolean; featured: Vector3 }) {
-    const k0 = `${wide}-${featured.x.toFixed(2)}-${featured.y.toFixed(2)}`;
-    if (k0 !== key) { key = k0; layout(wide ? SPREAD.wide : SPREAD.narrow, featured); }
-    // 0 at the hero, 1 once the deal has come forward
-    const fwd = ease(clamp01(s / 0.85));
-    const netA = still ? 1 - clamp01(s / 0.5) : 1 - ease(clamp01(s / 0.7));
-    net.visible = netA > 0.005;
+  function update({ s, t, still, wide, featured, view }: { s: number; t: number; still: boolean; wide: boolean; featured: Vector3; view: HeroView }) {
+    const k0 = `${wide}-${view.hw.toFixed(1)}-${view.hh.toFixed(1)}-${featured.x.toFixed(2)}-${featured.y.toFixed(2)}`;
+    if (k0 !== key) { key = k0; build(wide, view, featured); }
 
-    // the featured deal: shrunk onto its node in the hero, grown back to full size as it comes forward
+    // the deal grows out of the featured star as the visitor scrolls; until then it is not shown at all
     if (s < 1) {
-      const sc = still ? 1 : lerp(0.3, 1, fwd);
+      const grow = ease(clamp01((s - 0.1) / 0.75));
+      const sc = still ? 1 : lerp(0.02, 1, grow);
       deal.scale.setScalar(sc);
       deal.position.copy(F).multiplyScalar(1 - sc);
-      deal.visible = still ? s > 0.25 : true;
+      deal.visible = still ? s > 0.3 : s > 0.1;
     }
-    if (!net.visible) return;
+    const fade = still ? 1 - clamp01(s / 0.5) : 1 - ease(clamp01(s / 0.75)); // the rest of the sky
+    // the featured star brightens as it comes forward, then hands over to the deal's own core
+    const lift = still ? 0 : Math.sin(Math.PI * clamp01(s / 0.45));
+    const hand = still ? fade : 1 - ease(clamp01((s - 0.2) / 0.3));
+    sky.visible = Math.max(fade, hand) > 0.005;
+    if (!sky.visible) return;
 
-    nodes.forEach((n, k) => {
-      if (!n.g.visible) return;
-      const featuredNode = k === 0;
-      // the rest recede as the deal comes forward
-      n.g.position.copy(F).add(n.off);
-      n.g.scale.setScalar(featuredNode ? 1 : 0.78); // small and quiet: a backdrop, not the subject
-      if (!featuredNode) n.g.position.z -= 2.5 * fwd;
-      if (!still) n.g.position.y += Math.sin(t * 0.35 + k * 1.9) * 0.08;
-      const a = netA * (featuredNode ? (still ? 1 : 0) : 1); // the real deal is the featured node, except when still
-      const coreS = featuredNode ? 0.3 : 0.55;
-      n.core.scale.setScalar(coreS * (still ? 1 : 1 + 0.06 * Math.sin(t * 1.3 + k)));
-      n.wire.scale.copy(n.core.scale);
-      if (!still) { n.core.rotation.y = t * 0.3 + k; n.wire.rotation.y = n.core.rotation.y; n.wire.rotation.x = t * 0.12; }
-      (n.core.material as ShaderMaterial).uniforms.uOpacity.value = 0.9 * a;
-      (n.wire.material as LineBasicMaterial).opacity = 0.7 * a;
-
-      // a deal forming around the core: box, then the three score tags, then the seal; hold; dissolve
-      const u = still ? 0.5 : (t / LOOP + n.phase) % 1;
-      const out = still ? 0 : win(u, 0.82, 0.97);
-      const boxIn = still ? 1 : win(u, 0.02, 0.18);
-      const show = featuredNode ? 0 : a * (1 - out);
-      n.box.scale.setScalar(0.42 * lerp(0.6, 1, boxIn));
-      (n.box.material as LineBasicMaterial).opacity = 0.38 * boxIn * show;
-      n.tags.forEach((m, j) => {
-        const tin = still ? 1 : win(u, 0.14 + j * 0.07, 0.3 + j * 0.07);
-        const slot = tmp.set(0.85, 0.32 - j * 0.26, 0.1);
-        m.position.set(lerp(slot.x + 1.4, slot.x, tin), slot.y + lerp(0.5, 0, tin), slot.z);
-        m.scale.set(lerp(0.3, 0.55, [0.82, 0.28, 0.9][j]), 0.55, 1);
-        (m.material as MeshBasicMaterial).opacity = 0.5 * tin * show;
-      });
-      const press = still ? 1 : win(u, 0.42, 0.55);
-      n.seal.position.set(-0.78, -0.3, lerp(0.6, 0.12, press));
-      n.seal.scale.setScalar(lerp(1.8, 1, press));
-      (n.seal.material as MeshBasicMaterial).opacity = 0.75 * press * show;
+    const hp = halos.geometry.attributes.position.array as Float32Array, hc = halos.geometry.attributes.color.array as Float32Array;
+    const cp = cores.geometry.attributes.position.array as Float32Array, cc = cores.geometry.attributes.color.array as Float32Array;
+    stars.forEach((st, i) => {
+      st.pos.copy(st.base);
+      if (!st.featured) {
+        if (!still) { st.pos.x += Math.sin(t * 0.05 + st.tw) * 0.06; st.pos.y += Math.cos(t * 0.04 + st.tw * 1.3) * 0.05; }
+        st.pos.z -= 2.5 * (1 - fade);
+      }
+      const twinkle = still ? 1 : 0.78 + 0.22 * Math.sin(t * (0.6 + (i % 5) * 0.13) + st.tw);
+      const a = st.featured ? hand * (1 + 0.8 * lift) : fade;
+      const b = st.mag * twinkle * a * (wide ? 1.15 : 1.4);
+      col.copy(STAR).lerp(PALE, st.featured ? 0.3 * lift : 0.15).multiplyScalar(b);
+      hp.set([st.pos.x, st.pos.y, st.pos.z], i * 3); hc.set([col.r, col.g, col.b], i * 3);
+      col.copy(PALE).multiplyScalar(b);
+      cp.set([st.pos.x, st.pos.y, st.pos.z], i * 3); cc.set([col.r, col.g, col.b], i * 3);
     });
-
-    // lines between cores, and one slow spark on each
+    for (const p of [halos, cores]) {
+      p.geometry.attributes.position.needsUpdate = true;
+      p.geometry.attributes.color.needsUpdate = true;
+      p.geometry.computeBoundingSphere();
+    }
     const lp = lines.geometry.attributes.position.array as Float32Array;
-    const sp = sparks.geometry.attributes.position.array as Float32Array;
-    edges.forEach(([a, b], i) => {
-      const pa = nodes[a].g.position, pb = nodes[b].g.position;
+    links.forEach(([a, b], i) => {
+      const pa = stars[a].pos, pb = stars[b].pos;
       lp.set([pa.x, pa.y, pa.z, pb.x, pb.y, pb.z], i * 6);
-      const f = still ? 0.5 : (t * 0.08 + i * 0.29) % 1;
-      tmp.copy(pa).lerp(pb, f);
-      sp.set([tmp.x, tmp.y, tmp.z], i * 3);
     });
     lines.geometry.attributes.position.needsUpdate = true;
     lines.geometry.computeBoundingSphere();
-    sparks.geometry.attributes.position.needsUpdate = true;
-    sparks.geometry.computeBoundingSphere();
-    lineMat.opacity = 0.18 * netA;
-    sparkMat.opacity = still ? 0 : 0.7 * netA;
+    lineMat.opacity = (wide ? 0.2 : 0.26) * fade;
+    // stars keep a steady size on screen whatever the layout's camera distance
+    haloMat.size = (wide ? 0.12 : 0.15) * view.hh;
+    coreMat.size = (wide ? 0.027 : 0.034) * view.hh;
   }
 
   return { update };

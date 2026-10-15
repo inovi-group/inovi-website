@@ -709,7 +709,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   let monthStep = 0;
   const month = createMonth({ parent: stage, deal: root, data, fonts: F, texOf, makeSeal: wax, glass: xrayMaterial });
   // hero: a network of cores behind the headline; the featured deal is one of them and comes forward
-  const hero = createHero({ parent: stage, deal: root, glass: xrayMaterial, waxTex });
+  const hero = createHero({ parent: stage, deal: root });
   redraw();
   let alive = true;
   Promise.all([document.fonts?.load(`700 150px ${F.sans}`), document.fonts?.load(`600 38px ${F.mono}`)]).catch(() => {}).then(() => alive && redraw());
@@ -794,6 +794,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   const flights: ([number, number] | null)[] = [null, [0.3, 0.97], [1.3, 1.97], [2.3, 2.97], [3.62, 3.98], [5.4, 5.97]]; // the outcome leaves for the chain only after it has hit the box
   const TRAVEL = 0.68; // share of each flight spent travelling; the rest is the lock
 
+  let heroDist = 10; // camera distance in the hero framing: the constellations fill what it sees
   function placeCamera(bg: number, P: Layout) {
     const { w, h, aspect, wide } = view;
     const B = P.bounds;
@@ -802,11 +803,13 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
       // content framed in the right ~53% of the screen, the large story text on the left
       const fg = Math.max(B.hh / (fov * 0.84), B.hw / (fov * aspect * 0.53));
       dist = lerp(fg * 0.8, fg, bg);
+      heroDist = fg * 0.8;
       ox = lerp(0, -w * 0.19, bg); oy = 0;
     } else {
       // content in the top half of the screen (below the header), above the story text
       const fg = Math.max(B.hh / (fov * 0.47), B.hw / (fov * aspect * 0.94));
       dist = lerp(fg * 0.9, fg, bg);
+      heroDist = fg * 0.9;
       ox = 0; oy = lerp(h * 0.04, h * 0.145, bg);
     }
     camera.aspect = aspect;
@@ -1147,7 +1150,8 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     fadeFirma(Math.min(ease(clamp01((s - 0.2) / 0.7)), 1 - phase(s, 8.05, 8.45)));
     const dz = P.zones.deal;
     month.update({ s, t, still, wide: view.wide, bounds: P.bounds, zone: { cx: dz.cx, cy: dz.cy, w: dz.w, h: dz.h } });
-    hero.update({ s, t, still, wide: view.wide, featured: P.bc });
+    const hh = heroDist * fov;
+    hero.update({ s, t, still, wide: view.wide, featured: P.bc, view: { cx: P.bounds.cx, cy: P.bounds.cy, hw: hh * view.aspect, hh } });
   }
   return {
     update,
