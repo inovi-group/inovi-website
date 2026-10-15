@@ -34,6 +34,7 @@ import {
 } from "three";
 import type { StoryData, Score, Reality, Decision, ChainRecord } from "./content";
 import { createMonth } from "./monthScene";
+import { createHero } from "./heroScene";
 
 export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 export const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
@@ -224,7 +225,7 @@ function drawDecision(cv: Cv, decision: Decision) {
   c.clearRect(0, 0, W, H);
   brackets(c, W, H, "#d9a34a", 40, 16, 5);
   c.fillStyle = "#d9a34a"; c.font = `600 30px ${F.mono}`;
-  c.fillText("DECISION · MONTH-END REPORT", 54, 78);
+  c.fillText("DECISION · SEALED BY FIRMA", 54, 78);
   c.fillStyle = "#e7eaf0";
   fitFont(c, decision.title, W - 110, 58, F.sans);
   c.fillText(decision.title, 50, 158);
@@ -707,6 +708,8 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   // month end: the rest of the month's deals, and the report they are gathered into
   let monthStep = 0;
   const month = createMonth({ parent: stage, deal: root, data, fonts: F, texOf, makeSeal: wax, glass: xrayMaterial });
+  // hero: a network of cores behind the headline; the featured deal is one of them and comes forward
+  const hero = createHero({ parent: stage, deal: root, glass: xrayMaterial, waxTex });
   redraw();
   let alive = true;
   Promise.all([document.fonts?.load(`700 150px ${F.sans}`), document.fonts?.load(`600 38px ${F.mono}`)]).catch(() => {}).then(() => alive && redraw());
@@ -848,11 +851,10 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   const WHITE = new Color("#ffffff"), WIN = new Color("#7ef0a8");
 
   const tmp = new Vector3(), tmpC = new Color();
-  // Story steps → the deal's own timeline. Steps 6–8 are the month end (the deal waits at 5, then its
-  // decision is sealed out of sight while the report opens); verify and the rewrite attempt follow at 9–10.
-  const dealStep = (s: number) => (s <= 5 ? s : s < 7.2 ? 5 : s < 8 ? 5 + (s - 7.2) / 0.8 : s - 2);
+  // Story steps 0–8 are the deal's own timeline (hero network, scores, outcome, judging, decision, verify,
+  // rewrite attempt); 8–10 are the month end, where the deal waits in its last state while the report forms.
   function update({ step: s, t, dt, still }: FrameCtx) {
-    const step = dealStep(s);
+    const step = Math.min(s, 8);
     const P = LAYOUTS[layoutId][view.wide ? "wide" : "narrow"];
     const BS = P.box, BC = P.bc;
     const D = DIMS[P.style];
@@ -1140,10 +1142,12 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     vault.material.color.copy(tmpC);
     vault.material.opacity = 0.25 + 0.45 * Math.max(verifiedAt(recs.length - 1), tp);
     monthStep = s;
-    // after this frame's opacities are set: Firma fades out of the deal view for the month end, then back
-    fadeFirma(1 - (s < 7 ? phase(s, 5.05, 5.45) : 1 - phase(s, 8.35, 8.85)));
+    // after this frame's opacities are set: Firma's record comes in with the deal as it leaves the hero network,
+    // and steps out again at month end (there is one Firma: the report)
+    fadeFirma(Math.min(ease(clamp01((s - 0.2) / 0.7)), 1 - phase(s, 8.05, 8.45)));
     const dz = P.zones.deal;
     month.update({ s, t, still, wide: view.wide, bounds: P.bounds, zone: { cx: dz.cx, cy: dz.cy, w: dz.w, h: dz.h } });
+    hero.update({ s, t, still, wide: view.wide, featured: P.bc });
   }
   return {
     update,
@@ -1154,7 +1158,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     // a new outcome rewrites the faces (the data objects were updated in place by the page)
     setOutcome() { redraw(); },
     // the month end replays poorly out of sight: callers scroll back to the deal instead
-    inMonth: () => monthStep > 5.5 && monthStep < 8.5,
+    inMonth: () => monthStep > 8.4,
     // play the impact again where you are; the judging follows it
     replayOutcome() {
       const now = performance.now() / 1000;

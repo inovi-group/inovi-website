@@ -18,12 +18,12 @@ import type { Month, MonthDeal, StoryData } from "./content";
 import { MONTH_MAIN } from "./content";
 
 /**
- * Month end, after the single deal has been judged (story steps 5 → 8):
- *   5.05–5.45  Firma steps out of the deal view: its record panel and chain fade (there is one Firma, not one per deal)
- *   5.45–6.0   the deal shrinks into a plain card and the view pulls back to the month's closed deals, won or lost
- *   6.15–7.0   the deals fly in, one after another, and stack into the report (it thickens as they land)
- *   7.15–7.9   the report turns to face you, its cover swings open onto the month-end summary, and the seal presses
- *   8.15–8.9   back into the deal, for verify and the rewrite attempt
+ * Month end, the last act (story steps 8 → 10), after the deal's verify and rewrite attempt:
+ *   8.05–8.45  Firma steps out of the deal view: its record panel and chain fade (there is one Firma, not one per deal)
+ *   8.45–9.0   the deal shrinks into a plain card and the view pulls back to the month's closed deals, won or lost
+ *   9.1–9.7    the cards fly in, one after another, and stack into the report (it thickens as they land)
+ *   9.6–10     the report turns to face you, its cover swings open onto the month-end summary, and the seal presses;
+ *              the page ends on it, with the call to action beside it
  * Reduced motion: no flight, no zoom; each stage crossfades into the next.
  */
 type Emblem = { g: Group; set(lock: number, ver: number, brk: number, alpha: number): void };
@@ -249,8 +249,8 @@ export function createMonth(opts: {
     if (wide !== drawnWide) redraw(wide); // the summary page is set larger on phones
     shapeCards(Zd.w / Zd.h);
     // the deal first sheds its Firma side (see checkScene), then shrinks into a card among the month's deals
-    const mz = phase(s, 5.45, 6.0), g = clamp01((s - 6.15) / 0.85), opn = phase(s, 7.15, 7.9), rz = phase(s, 8.15, 8.9);
-    const active = s > 5.1 && s < 9;
+    const mz = phase(s, 8.45, 9.0), g = clamp01((s - 9.1) / 0.6), opn = phase(s, 9.6, 9.97);
+    const active = s > 8.0;
 
     // the grid: the deal's own framing, with room for the month around it (wider on phones)
     const regW = 2 * B.hw * (wide ? 1 : 1.75), regH = 2 * B.hh;
@@ -270,21 +270,20 @@ export function createMonth(opts: {
     byDist.forEach((tl, k) => { tl.ord = k / (tiles.length - 1); });
 
     // ---- pulling back: the deal and the month share one transform, like a camera dolly ----
-    const zoom = still ? 1 : rz > 0 ? 1 - rz : mz;
+    const zoom = still ? 1 : mz;
     const k = still ? 1 : Math.exp(Math.log(1 / sD) * (1 - zoom));
-    // out of the deal toward its place in the month; on the way back it grows out of the report
+    // out of the deal toward its place in the month
     if (still) A.copy(S);
-    else if (rz > 0) A.copy(C).lerp(Z, ease(rz));
     else A.copy(Z).lerp(S, ease(zoom));
     layer.scale.setScalar(k);
     layer.position.copy(A).addScaledVector(S, -k);
-    if (active || rz > 0) {
+    if (active) {
       const ds = still ? 1 : k * sD;
       deal.scale.setScalar(ds);
       deal.position.copy(A).addScaledVector(Z, -ds);
       if (still) deal.position.set(0, 0, 0);
     } else { deal.scale.setScalar(1); deal.position.set(0, 0, 0); }
-    deal.visible = still ? !(s > 5.55 && s < 8.55) : !(mz > 0.999 && rz < 0.001);
+    deal.visible = still ? s < 8.55 : mz < 0.999;
 
     // ---- the report: appears as the deals converge, opens onto the summary, then steps aside ----
     const bkC = (2 * B.hh * (wide ? 0.62 : 0.5)) / RH;
@@ -292,7 +291,7 @@ export function createMonth(opts: {
     const thick = 0.03 + 0.22 * (still ? 1 : ease(g));
     let alpha: number;
     if (still) {
-      alpha = clamp01((s - 6.35) / 0.5) * (1 - clamp01((s - 8.3) / 0.4));
+      alpha = clamp01((s - 9.25) / 0.4);
       book.position.set(B.cx, B.cy, 0.4);
       book.rotation.set(0, 0, 0);
       book.scale.setScalar(bkO);
@@ -301,10 +300,10 @@ export function createMonth(opts: {
       pageMat.opacity = alpha * opn;
     } else {
       const appear = ease(clamp01(g / 0.35));
-      alpha = appear * (1 - ease(clamp01(rz / 0.6)));
-      book.position.set(B.cx, B.cy, lerp(0.25, 0.4, opn) - rz * 0.8);
+      alpha = appear;
+      book.position.set(B.cx, B.cy, lerp(0.25, 0.4, opn));
       book.rotation.set(lerp(-0.32, -0.03, opn), lerp(0.38, -0.05, opn) + Math.sin(t * 0.4) * 0.015 * (1 - opn), 0);
-      book.scale.setScalar(lerp(bkC * lerp(0.85, 1, appear), bkO, opn) * lerp(1, 0.8, rz));
+      book.scale.setScalar(lerp(bkC * lerp(0.85, 1, appear), bkO, opn));
       hinge.rotation.y = -opn * 1.9;
       coverMat.opacity = alpha * (1 - clamp01((opn - 0.55) / 0.4));
       pageMat.opacity = alpha * clamp01((opn - 0.15) / 0.5);
@@ -317,7 +316,7 @@ export function createMonth(opts: {
     insideMat.opacity = coverMat.opacity * 0.95;
     coverSeal.set(1, 0, 0, coverMat.opacity);
     // the report itself is sealed as it opens
-    pageSeal.set(still ? (opn > 0.5 ? 1 : 0) : phase(s, 7.6, 7.98), 0, 0, pageMat.opacity);
+    pageSeal.set(still ? (opn > 0.5 ? 1 : 0) : phase(s, 9.8, 10), 0, 0, pageMat.opacity);
     book.visible = alpha > 0.005;
     book.updateMatrixWorld();
     layer.updateMatrixWorld();
@@ -327,12 +326,12 @@ export function createMonth(opts: {
     tiles.forEach((tl) => {
       const m = tl.m, mat = m.material as MeshBasicMaterial;
       const reveal = tl.d.main ? clamp01((mz - 0.72) / 0.28) : clamp01((mz - 0.15) / 0.5);
-      let op = (still ? clamp01((mz - 0.25) / 0.5) : reveal) * (rz > 0 ? 0 : 1);
+      let op = still ? clamp01((mz - 0.25) / 0.5) : reveal;
       m.position.copy(tl.slot);
       if (!still) m.position.z += Math.sin(t * 0.6 + tl.bob) * 0.03 * (1 - g);
       m.quaternion.identity();
       m.scale.set(tw, th, 1);
-      if (still) op *= 1 - clamp01((s - 6.3) / 0.5);
+      if (still) op *= 1 - clamp01((s - 9.2) / 0.4);
       else if (g > 0) {
         const u = ease(clamp01(g * 3 - tl.ord * 2)); // one after another, a few in the air at a time
         // landing spot on the report, in month space (the layer is at rest by now)

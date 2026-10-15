@@ -128,9 +128,9 @@ export function Experience() {
   }, [cfg]);
 
   const getStep = useCallback(() => stepFn.current(), []);
-  // landing: the scene is a soft, dim background; it sharpens as it comes forward
+  // landing: the core network sits slightly dimmed behind the headline, and comes up to full as the deal arrives
   const setBackdrop = useCallback((bg: number) => {
-    if (backdropRef.current) backdropRef.current.style.filter = bg >= 0.999 ? "none" : `blur(${(2.4 * (1 - bg)).toFixed(2)}px) brightness(${(0.42 + 0.58 * bg).toFixed(3)})`;
+    if (backdropRef.current) backdropRef.current.style.filter = bg >= 0.999 ? "none" : `blur(${(0.6 * (1 - bg)).toFixed(2)}px) brightness(${(0.7 + 0.3 * bg).toFixed(3)})`;
     rootRef.current?.style.setProperty("--landing", (1 - bg).toFixed(3));
   }, []);
 
