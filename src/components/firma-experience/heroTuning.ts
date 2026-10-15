@@ -18,12 +18,15 @@ export const HERO_DEFAULTS = {
   beamBrightness: 0.22,  // the brighter inner core
   beamColor: "#2b9c80",
   coreGlow: 0.5,         // the hot spot at the source
+  beamFluctuation: 1.0,  // 0 = perfectly smooth; 1 = soft drifting streaks; up to 3 = flickering, rippling edges
+  fluctuationSpeed: 1.0,
   // aurora, inside the beam
   auroraIntensity: 0.45,
   auroraSpeed: 0.25,     // how fast the ribbons flow (0 = still)
   auroraLength: 1.25,    // how far down the beam the ribbons reach, in beam lengths (independent of the beam)
   auroraRibbons: 3,      // how many ribbons flow down the beam
   auroraWidth: 0.17,     // width of each ribbon, as a share of the beam's width (they stay inside it)
+  auroraSpread: 0.35,    // 0 = all ribbons in the centre, 1 = across the beam's full width, 2 = twice its width
   auroraTeal: 1.0,       // colour mix: weight of each ribbon
   auroraViolet: 1.0,
   auroraGold: 0.5,
@@ -65,6 +68,8 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
     { key: "beamBrightness", label: "Beam brightness (core)", min: 0, max: 1, step: 0.01 },
     { key: "beamColor", label: "Beam colour" },
     { key: "coreGlow", label: "Source glow", min: 0, max: 2, step: 0.01 },
+    { key: "beamFluctuation", label: "Fluctuation (smooth → textured)", min: 0, max: 3, step: 0.01 },
+    { key: "fluctuationSpeed", label: "Fluctuation speed", min: 0, max: 8, step: 0.05 },
   ] },
   { group: "Aurora", items: [
     { key: "auroraIntensity", label: "Intensity", min: 0, max: 1.5, step: 0.01 },
@@ -72,6 +77,7 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
     { key: "auroraLength", label: "Length (down the beam)", min: 0.1, max: 2.5, step: 0.01 },
     { key: "auroraRibbons", label: "Ribbons (count)", min: 1, max: 8, step: 1 },
     { key: "auroraWidth", label: "Ribbon width", min: 0.03, max: 0.45, step: 0.005 },
+    { key: "auroraSpread", label: "Aurora spread", min: 0, max: 2, step: 0.01 },
     { key: "auroraTeal", label: "Teal", min: 0, max: 2, step: 0.01 },
     { key: "auroraViolet", label: "Violet", min: 0, max: 2, step: 0.01 },
     { key: "auroraGold", label: "Gold", min: 0, max: 2, step: 0.01 },
