@@ -45,6 +45,7 @@ export const HERO_DEFAULTS = {
   pickX: 0,              // horizontal shift, in viewport widths (0 = where the story's deal sits)
   pickY: 0.52,           // vertical position, from the top of the viewport (0.5 = the middle)
   pickSize: 1.0,
+  scanZoom: 1.45,        // the envelope alone is shown this much larger while it is scanned (its cards readable)
   envelopeGlow: 0.35,    // the gold as a light source: emission, and the glow radiating from its edges
   glowRadius: 0.8,       // how far the glow reaches out from the envelope's edges
   lightCast: 0.6,        // how much each envelope lights up the stardust around it
@@ -102,6 +103,7 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
     { key: "pickX", label: "Horizontal shift", min: -0.4, max: 0.4, step: 0.005 },
     { key: "pickY", label: "Vertical (from top)", min: 0.2, max: 0.85, step: 0.005 },
     { key: "pickSize", label: "Size", min: 0.4, max: 2.5, step: 0.01 },
+    { key: "scanZoom", label: "Envelope zoom while scanned", min: 1, max: 2.2, step: 0.01 },
   ] },
   { group: "Gold glow", items: [
     { key: "envelopeGlow", label: "Envelope glow / emission", min: 0, max: 2, step: 0.01 },

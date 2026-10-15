@@ -913,14 +913,18 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
 
     // the envelope, and the scan that reveals what is inside it
     const scanP = still ? 0 : phase(s, 0.5, 0.95);
+    // during the scan the envelope alone is shown larger, so the three cards inside are readable; it eases back
+    // to its story size as the first card leaves (by story step 1.7)
+    const envZ = 1 + (heroTune.scanZoom - 1) * (1 - ease(clamp01((s - 1.1) / 0.6)));
+    const BSe = BS * envZ;
     const seen = still ? clamp01((s - 0.45) / 0.3) : scanP; // paper gives way to the X-ray view
     paper.g.position.copy(BC);
-    paper.g.scale.setScalar(BS);
+    paper.g.scale.setScalar(BSe);
     paper.setOpacity(1 - seen);
     envX.position.copy(BC);
-    envX.scale.setScalar(BS);
-    shell.scale.setScalar(BS);
-    scan.scale.setScalar(BS);
+    envX.scale.setScalar(BSe);
+    shell.scale.setScalar(BSe);
+    scan.scale.setScalar(BSe);
     shell.position.copy(BC);
     // the hit: a win flares the box bright, a loss splits it into pieces; afterwards a faint tint remains
     const flash = boom && !still ? Math.exp(-k * 3.2) : 0;
@@ -944,25 +948,26 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     const scanning = scanP > 0 && scanP < 1;
     scanMat.uniforms.uOpacity.value = Math.sin(Math.PI * scanP);
     scan.visible = scanning;
-    scan.position.set(BC.x, BC.y + (0.5 - scanP) * ENV.h * 1.1 * BS, ENV.d * BS);
+    scan.position.set(BC.x, BC.y + (0.5 - scanP) * ENV.h * 1.1 * BSe, ENV.d * BSe);
     scan.updateMatrixWorld();
     const scanY = scan.getWorldPosition(tmp).y;
 
     layers.forEach((l) => {
-      const a = ease(clamp01(step - l.i));
-      const b = ease(clamp01(step - l.i - 1));
-      const S = P.slot(l.i), F = P.focus;
-      // inside the envelope the three score cards stand like documents, the first in front, the others peeking above
-      const inY = BC.y + (-0.2 + 0.22 * l.i) * BS, inZ = (0.03 - 0.03 * l.i) * BS;
-      l.g.position.set(
-        lerp(lerp(BC.x, F.p.x, a), S.p.x, b),
-        lerp(lerp(inY, F.p.y, a), S.p.y, b),
-        lerp(lerp(inZ, F.p.z, a), S.p.z, b) + Math.sin(Math.PI * a) * 0.4 * (1 - b)
-      );
-      l.g.rotation.x = lerp(lerp(Math.PI / 2, Math.PI / 2 - 0.2, a), Math.PI / 2 - 0.08, b);
-      l.g.scale.setScalar(lerp(lerp(BS * 0.78, F.s, a), S.s, b) * lerp(1, l.s.check.ok ? 1.1 : 0.94, cmp));
+      const S = P.slot(l.i);
+      // Inside the envelope the three score cards sit side by side in three separate columns, each sized to fit
+      // with margins. Then each one, in turn (story step i → i + 1), rises straight out to its own place above the
+      // envelope, growing to full size on the way. Columns and places run in the same left-to-right order and the
+      // next card only leaves once the last has gone, so no card ever crosses another.
+      const IN_GAP = 0.1, IN_MARGIN = 0.14;
+      const colW = (ENV.w - 2 * IN_MARGIN - 2 * IN_GAP) / 3; // envelope units
+      const inS = colW / SLAB.w;
+      const inX = BC.x + (l.i - 1) * (colW + IN_GAP) * BSe, inY = BC.y - 0.12 * BSe, inZ = 0.02 * BSe;
+      const m = ease(clamp01((step - l.i - 0.05) / 0.9));
+      l.g.position.set(lerp(inX, S.p.x, m), lerp(inY, S.p.y, m), lerp(inZ, S.p.z, m) + Math.sin(Math.PI * m) * 0.25);
+      l.g.rotation.x = lerp(Math.PI / 2, Math.PI / 2 - 0.08, m);
+      l.g.scale.setScalar(lerp(inS * BSe, S.s, m) * lerp(1, l.s.check.ok ? 1.1 : 0.94, cmp));
       // hidden in the sealed envelope until the scan passes over the card
-      const rev = s >= 1 ? 1 : still ? seen : clamp01((inY + 0.3 * BS - scanY) / (0.45 * BS));
+      const rev = s >= 1 ? 1 : still ? seen : clamp01((inY + 0.3 * BSe - scanY) / (0.45 * BSe));
       const reveal = clamp01((step - l.i) * 1.6);
       tmpC.copy(IDLE).lerp(l.color, reveal).lerp(l.s.check.ok ? OK : IDLE, cmp);
       l.fill.material.uniforms.uColor.value.copy(tmpC);
@@ -970,8 +975,8 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
       l.fill.material.uniforms.uOpacity.value = lerp(0.55 + 0.35 * open, 0.85, reveal) * (l.s.check.ok ? 1 : lerp(1, 0.65, cmp)) * rev;
       l.fill.material.uniforms.uGrid.value = 1 - reveal * 0.6;
       l.edges.material.opacity = lerp(0.55, 1, reveal) * rev;
-      // the scores read through the X-ray while the card is still inside
-      const face = Math.max(clamp01((a - 0.35) * 2.5), (1 - a) * rev * 0.85);
+      // the scores read through the X-ray while the card is still inside, and fully once it is out
+      const face = Math.max(clamp01(m * 3), rev * 0.9);
       l.plain.material.opacity = face * (1 - cmp);
       l.checkedFace.material.opacity = face * cmp;
       // judged: right ones light up with a pulse, wrong ones shudder (and show their crack)

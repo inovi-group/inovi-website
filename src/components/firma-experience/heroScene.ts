@@ -314,7 +314,7 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
         if (!still) {
           g.position.lerp(pickAt, pick);
           g.rotation.x *= 1 - pick; g.rotation.y *= 1 - pick; g.rotation.z *= 1 - pick;
-          g.scale.setScalar(lerp(it.size, T.pickSize, pick) * bs);
+          g.scale.setScalar(lerp(it.size, T.pickSize * T.scanZoom, pick) * bs); // the size the deal's envelope is scanned at
           it.env.setLight(lerp(1, 0, pick), T.envelopeGlow * (1 - pick));
         }
         it.env.setOpacity(still ? it.ends * fade : s >= PICK_END ? 0 : it.ends);
