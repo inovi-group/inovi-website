@@ -19,7 +19,7 @@ import {
   type Texture,
 } from "three";
 import { ENV, makeEnvelope } from "./envelope";
-const ENV_H = ENV.h, ENV_W = ENV.w;
+const ENV_W = ENV.w;
 import { heroTune as T, LIMITS } from "./heroTuning";
 
 /**
@@ -119,16 +119,6 @@ const auroraMaterial = () => new ShaderMaterial({
   transparent: true, depthWrite: false, blending: AdditiveBlending,
 });
 
-// a soft translucent orb (bokeh): an even glow with a slightly brighter rim, fading out at the edge
-function orbTexture() {
-  const cv = Object.assign(document.createElement("canvas"), { width: 128, height: 128 });
-  const c = cv.getContext("2d")!, g = c.createRadialGradient(64, 64, 0, 64, 64, 64);
-  g.addColorStop(0, "rgba(255,255,255,0.55)"); g.addColorStop(0.62, "rgba(255,255,255,0.5)");
-  g.addColorStop(0.8, "rgba(255,255,255,0.75)"); g.addColorStop(0.9, "rgba(255,255,255,0.3)"); g.addColorStop(1, "rgba(255,255,255,0)");
-  c.fillStyle = g; c.fillRect(0, 0, 128, 128);
-  const t = new CanvasTexture(cv); t.colorSpace = SRGBColorSpace;
-  return t;
-}
 // The glow an envelope radiates, hugging its rectangular shape: a rounded rectangle with a soft falloff,
 // drawn on a plane a little larger than the envelope and turned with it.
 const rectGlowMaterial = () => new ShaderMaterial({
@@ -146,20 +136,6 @@ const rectGlowMaterial = () => new ShaderMaterial({
     }`,
   transparent: true, depthWrite: false, blending: AdditiveBlending,
 });
-// An echo of the envelope: its face, crisp or softened (uBlur mixes in a pre-blurred copy), tinted and glowing.
-const echoMaterial = (sharp: Texture, soft: Texture) => new ShaderMaterial({
-  uniforms: { uSharp: { value: sharp }, uSoft: { value: soft }, uBlur: { value: 0.35 }, uOpacity: { value: 0 }, uGlow: { value: 0.4 } },
-  vertexShader: VERT,
-  fragmentShader: /* glsl */ `
-    uniform sampler2D uSharp, uSoft; uniform float uBlur, uOpacity, uGlow; varying vec2 vUv;
-    void main() {
-      vec4 c = mix(texture2D(uSharp, vUv), texture2D(uSoft, vUv), uBlur);
-      vec3 col = c.rgb * (1.0 + uGlow) + vec3(1.0, 0.78, 0.38) * uGlow * 0.25;
-      gl_FragColor = vec4(col * uOpacity, uOpacity * c.a);
-    }`,
-  transparent: true, depthWrite: false, blending: AdditiveBlending,
-});
-
 function dotTexture() {
   const cv = Object.assign(document.createElement("canvas"), { width: 32, height: 32 });
   const c = cv.getContext("2d")!, g = c.createRadialGradient(16, 16, 0, 16, 16, 16);
@@ -201,16 +177,6 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
   stardust.renderOrder = -1;
   hero.add(stardust);
 
-  // the golden wake: a few particles per envelope, streaming back from it and closing fast to its centre line
-  const NT = LIMITS.envelopes * LIMITS.trail;
-  const wake = Array.from({ length: NT }, () => ({ side: rnd() < 0.5 ? -1 : 1, jit: rnd(), sp: lerp(0.6, 1.4, rnd()), ph: rnd() }));
-  const trailGeo = new BufferGeometry();
-  trailGeo.setAttribute("position", new BufferAttribute(new Float32Array(NT * 3), 3));
-  trailGeo.setAttribute("color", new BufferAttribute(new Float32Array(NT * 3), 3));
-  const trailMat = new PointsMaterial({ size: 0.02, map: orbTexture(), vertexColors: true, transparent: true, depthWrite: false, blending: AdditiveBlending, sizeAttenuation: true });
-  const trail = new Points(trailGeo, trailMat);
-  trail.renderOrder = -0.5;
-  hero.add(trail);
   // each envelope's glow: a child of the envelope, just behind it, so it turns with it
   const glowGeo = new PlaneGeometry(1, 1);
   const glows = items.map((it) => {
@@ -220,20 +186,6 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
     it.env.g.add(m);
     return m;
   });
-  // echoes: afterimages of each envelope, trailing behind it along its path
-  const softCv = document.createElement("canvas");
-  const softTex = new CanvasTexture(softCv);
-  softTex.colorSpace = SRGBColorSpace;
-  let faceVersion = -1;
-  const echoGeo = new PlaneGeometry(ENV.w, ENV.h);
-  const echoes = items.map(() => Array.from({ length: LIMITS.echoes }, () => {
-    const m = new Mesh(echoGeo, echoMaterial(face, softTex));
-    m.renderOrder = -0.6;
-    m.visible = false;
-    hero.add(m);
-    return m;
-  }));
-  const gold = new Color("#ffcf6a"), back = new Vector3(), side = new Vector3(), tmpV = new Vector3();
 
   const E = new Vector3(), P1 = new Vector3(), dir = new Vector3(), perp = new Vector3(), pos = new Vector3(), mid = new Vector3();
   const warm = new Color("#ffe2a8");
@@ -385,75 +337,6 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
       u.uPlane.value.set(pw, ph); u.uHalf.value.set(ENV.w / 2, ENV.h / 2); u.uFall.value = fall;
       u.uOpacity.value = Math.min(1.5, 0.9 * on);
     });
-
-    // ---- echoes: shrinking, fading afterimages behind each envelope; the gaps shrink too, so the wake closes ----
-    if (face.version !== faceVersion && (face.image as HTMLCanvasElement)?.width) {
-      faceVersion = face.version;
-      // a softened copy of the face: drawn small, then scaled back up
-      const src = face.image as HTMLCanvasElement, sm = document.createElement("canvas");
-      sm.width = Math.max(8, src.width >> 4); sm.height = Math.max(8, src.height >> 4);
-      sm.getContext("2d")!.drawImage(src, 0, 0, sm.width, sm.height);
-      softCv.width = src.width >> 1; softCv.height = src.height >> 1;
-      const sc = softCv.getContext("2d")!; sc.imageSmoothingQuality = "high"; sc.drawImage(sm, 0, 0, softCv.width, softCv.height);
-      softTex.needsUpdate = true;
-    }
-    const ne = Math.min(LIMITS.echoes, Math.round(T.echoCount));
-    back.copy(dir).negate();
-    items.forEach((it, k) => {
-      const g = it.env.g;
-      const a0 = k < count && g.visible ? (it.env.box.material as MeshBasicMaterial[])[4].opacity : 0;
-      const away = k === picked ? 1 - pick : 1;
-      let off = 0, sc = 1, op = 1;
-      echoes[k].forEach((m, i) => {
-        if (i >= ne || a0 * away < 0.01) { m.visible = false; return; }
-        off += T.echoSpacing * ENV.h * g.scale.x * sc; // each gap a little shorter than the last
-        sc *= T.echoShrink; op *= T.echoFalloff;
-        m.position.copy(g.position).addScaledVector(back, off);
-        m.position.z -= 0.03 * (i + 1);
-        m.rotation.copy(g.rotation);
-        m.scale.setScalar(g.scale.x * sc);
-        const u = (m.material as ShaderMaterial).uniforms;
-        u.uOpacity.value = op * a0 * away;
-        u.uGlow.value = T.echoGlow; u.uBlur.value = T.echoBlur;
-        m.visible = u.uOpacity.value > 0.004;
-      });
-    });
-
-    // ---- golden wake: behind each envelope (back up its path), a V that closes to the centre line quickly ----
-    const per = Math.min(LIMITS.trail, Math.round(T.trailCount * (wide ? 1 : 0.5)));
-    const tp = trailGeo.attributes.position.array as Float32Array, tc = trailGeo.attributes.color.array as Float32Array;
-    back.copy(dir).negate();
-    let n = 0;
-    items.forEach((it, k) => {
-      if (k >= count || per === 0) return;
-      const g = it.env.g;
-      const a0 = g.visible ? (it.env.box.material as MeshBasicMaterial[])[4].opacity : 0;
-      const away = k === picked ? 1 - pick : 1; // the picked one leaves its wake behind as it comes forward
-      if (a0 * away < 0.01) return;
-      const h = ENV_H * g.scale.x, wHalf = ENV_W * 0.5 * g.scale.x;
-      // the wake trails along the envelope's own fall line, in the plane of the beam
-      side.copy(perp);
-      for (let i = 0; i < per; i++) {
-        const w = wake[k * LIMITS.trail + i];
-        // a: 0 at the envelope's back edge, 1 at the end of the wake; particles stream back along it
-        const a = still ? (i + w.jit) / per : ((i + w.jit) / per + t * 0.35 * w.sp) % 1;
-        const d = h * 0.45 + a * T.trailLength * h;
-        const spread = wHalf * Math.exp(-T.trailTaper * a) * (0.55 + 0.45 * w.jit); // closes fast toward the middle
-        tmpV.copy(g.position).addScaledVector(back, d).addScaledVector(side, w.side * spread);
-        tmpV.z -= 0.02;
-        tp.set([tmpV.x, tmpV.y, tmpV.z], n * 3);
-        const tw = still ? 1 : 0.75 + 0.25 * Math.sin(t * 3 + w.ph * 20);
-        const b = T.trailBrightness * Math.exp(-a / Math.max(0.05, T.trailFade)) * a0 * away * tw;
-        tc.set([gold.r * b, gold.g * b, gold.b * b], n * 3);
-        n++;
-      }
-    });
-    trailGeo.setDrawRange(0, n);
-    trailGeo.attributes.position.needsUpdate = true;
-    trailGeo.attributes.color.needsUpdate = true;
-    trailGeo.computeBoundingSphere();
-    trailMat.size = T.trailSize * B.hh;
-    trailMat.opacity = T.trailOpacity;
 
     // ---- stardust ----
     const nd = Math.min(LIMITS.dust, Math.round(T.dustCount * (wide ? 1 : 0.42)));
