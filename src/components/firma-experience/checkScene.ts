@@ -1177,7 +1177,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     fadeFirma(Math.min(ease(clamp01((s - 0.9) / 0.5)), 1 - phase(s - 1, 8.05, 8.45)));
     const dz = P.zones.deal;
     month.update({ s: s - 1, t, still, wide: view.wide, bounds: P.bounds, zone: { cx: dz.cx, cy: dz.cy, w: dz.w, h: dz.h } });
-    hero.update({ s, t, still, wide: view.wide, bounds: P.bounds, bc: P.bc, bs: P.box });
+    hero.update({ s, t, still, wide: view.wide, bounds: P.bounds, bc: P.bc, bs: P.box, camera });
   }
   return {
     update,

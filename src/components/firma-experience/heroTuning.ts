@@ -5,10 +5,12 @@
  */
 export const HERO_DEFAULTS = {
   // light source and beam
-  sourceX: 0.86,         // horizontal position of the light's source (0 = scene centre, 1 = its right edge)
-  sourceHeight: 1.16,    // height of the source above the scene's centre
+  sourceX: 1.0,          // horizontal position of the light's source (0 = scene centre, 1 = its right edge)
+  sourceHeight: 2.0,     // height of the source above the scene's centre (about 1.25 is the top edge: above it, the
+                         // source is off the page and the beam enters from above)
   sourceDepth: -1.2,     // distance of the beam behind (−) or in front of (+) the deal's plane
-  beamSpread: 1.4,       // half-width of the cone at the bottom: how much it fans out
+  beamWidth: 0.12,       // half-width of the beam at its source
+  beamSpread: 1.3,       // how much it widens going down (0 = a column with parallel sides)
   beamLength: 1.0,       // length of the beam (1 = from the source down to the middle bottom)
   beamOpacity: 0.5,      // density of the beam's body
   beamBrightness: 0.22,  // the brighter inner core
@@ -29,6 +31,10 @@ export const HERO_DEFAULTS = {
   depthNear: 0.9,        // depth range the stream spreads over as it falls
   depthFar: -2.4,
   rotation: 1.0,         // amount of gentle turning (0 = none)
+  // the featured envelope, while it is picked out and scanned (then it glides into the story's place)
+  pickX: 0,              // horizontal shift, in viewport widths (0 = where the story's deal sits)
+  pickY: 0.52,           // vertical position, from the top of the viewport (0.5 = the middle)
+  pickSize: 1.0,
   // stardust
   dustCount: 260,        // phones show about 40% of these
   dustSize: 0.028,
@@ -40,10 +46,11 @@ export type TuneKey = keyof HeroTune;
 // the panel: groups of sliders (and one colour picker), built from this list
 export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string; min?: number; max?: number; step?: number }[] }[] = [
   { group: "Light source & beam", items: [
-    { key: "sourceX", label: "Source horizontal", min: -0.5, max: 1.6, step: 0.01 },
-    { key: "sourceHeight", label: "Source height", min: 0.4, max: 2.2, step: 0.01 },
+    { key: "sourceX", label: "Source horizontal", min: -1.5, max: 3, step: 0.01 },
+    { key: "sourceHeight", label: "Source height", min: 0.4, max: 5, step: 0.01 },
     { key: "sourceDepth", label: "Source distance (depth)", min: -6, max: 2, step: 0.05 },
-    { key: "beamSpread", label: "Beam spread", min: 0.3, max: 2.5, step: 0.01 },
+    { key: "beamWidth", label: "Beam width (at source)", min: 0.01, max: 2, step: 0.01 },
+    { key: "beamSpread", label: "Beam spread (widening)", min: 0, max: 2.5, step: 0.01 },
     { key: "beamLength", label: "Beam length", min: 0.5, max: 1.8, step: 0.01 },
     { key: "beamOpacity", label: "Beam opacity / density", min: 0, max: 1, step: 0.01 },
     { key: "beamBrightness", label: "Beam brightness (core)", min: 0, max: 1, step: 0.01 },
@@ -66,6 +73,11 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
     { key: "depthNear", label: "Depth near", min: -3, max: 3, step: 0.05 },
     { key: "depthFar", label: "Depth far", min: -8, max: 1, step: 0.05 },
     { key: "rotation", label: "Rotation amount", min: 0, max: 3, step: 0.05 },
+  ] },
+  { group: "Featured envelope (pick & scan)", items: [
+    { key: "pickX", label: "Horizontal shift", min: -0.4, max: 0.4, step: 0.005 },
+    { key: "pickY", label: "Vertical (from top)", min: 0.2, max: 0.85, step: 0.005 },
+    { key: "pickSize", label: "Size", min: 0.4, max: 2.5, step: 0.01 },
   ] },
   { group: "Stardust", items: [
     { key: "dustCount", label: "Count", min: 0, max: 800, step: 10 },

@@ -1,4 +1,5 @@
 import {
+  type PerspectiveCamera,
   AdditiveBlending,
   NormalBlending,
   BufferAttribute,
@@ -140,7 +141,17 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
   const E = new Vector3(), P1 = new Vector3(), dir = new Vector3(), perp = new Vector3(), pos = new Vector3(), mid = new Vector3();
   const warm = new Color("#ffe2a8");
 
-  function update({ s, t, still, wide, bounds: B, bc, bs }: { s: number; t: number; still: boolean; wide: boolean; bounds: Bounds; bc: Vector3; bs: number }) {
+  const ndc = new Vector3(), pickAt = new Vector3(), shift = new Vector3();
+  function update({ s, t, still, wide, bounds: B, bc, bs, camera }: { s: number; t: number; still: boolean; wide: boolean; bounds: Bounds; bc: Vector3; bs: number; camera: PerspectiveCamera }) {
+    // ---- where the featured envelope is picked and scanned: a place on screen (tunable), not the story's spot.
+    // The whole deal view is shifted and scaled there for the scan, then glides back as the story begins.
+    camera.updateMatrixWorld();
+    ndc.copy(bc).project(camera);
+    pickAt.set(ndc.x + 2 * T.pickX, 1 - 2 * T.pickY, ndc.z).unproject(camera);
+    const hold = 1 - ease(clamp01((s - 1.1) / 0.6)); // 1 through the scan, back to 0 by story step 1.7
+    shift.subVectors(pickAt, bc).multiplyScalar(hold);
+    const ks = lerp(1, T.pickSize, hold);
+    if (s < 1.7) { deal.scale.setScalar(ks); deal.position.copy(bc).multiplyScalar(1 - ks).add(shift); }
     // the source at the top right, the beam falling toward the middle bottom
     // (phones: the same settings, scaled to their taller, narrower framing)
     const nx = wide ? 1 : 1.047, ny = wide ? 1 : 0.905;
@@ -151,8 +162,9 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
     const L = dir.length() * T.beamLength;
     dir.normalize();
     perp.set(-dir.y, dir.x, 0);
-    const W1 = T.beamSpread * (wide ? 1 : 0.786) * B.hw, W0 = 0.05 * B.hw; // half-width of the cone at the bottom and at the source
-    const halfAt = (u: number) => lerp(W0, W1, u);
+    // the beam's half-width: W0 at the source, widening by the spread along its length (0 = parallel sides)
+    const nw = wide ? 1 : 0.786, W0 = T.beamWidth * nw * B.hw, grow = T.beamSpread * nw * B.hw;
+    const halfAt = (u: number) => W0 + grow * u;
     const tilt = Math.atan2(dir.y, dir.x) + Math.PI / 2;
 
     const pick = still ? 0 : ease(clamp01(s / PICK_END));
@@ -163,13 +175,14 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
 
     // ---- the beam ----
     const ext = 1.25; // the light carries on a little past the stream
+    const Wmax = W0 + grow * ext; // the plane's half-width: the beam's width at its far end
     mid.copy(E).addScaledVector(dir, (L * ext) / 2);
     beams.forEach((m) => {
       m.position.copy(mid);
       m.rotation.set(0, 0, Math.atan2(dir.y, dir.x) + Math.PI / 2);
-      m.scale.set(W1 * 2 * ext, L * ext, 1);
+      m.scale.set(Wmax * 2, L * ext, 1);
       const u = (m.material as ShaderMaterial).uniforms;
-      u.uTime.value = t; u.uAlpha.value = fade; u.uW0.value = W0 / (W1 * ext);
+      u.uTime.value = t; u.uAlpha.value = fade; u.uW0.value = W0 / Wmax;
       u.uBody.value = T.beamOpacity; u.uCoreK.value = T.beamBrightness; u.uGlow.value = T.coreGlow;
     });
     (beams[0].material as ShaderMaterial).uniforms.uColor.value.set(T.beamColor);
@@ -179,7 +192,7 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
     aurora.rotation.copy(beams[0].rotation);
     aurora.scale.copy(beams[0].scale);
     const au = (aurora.material as ShaderMaterial).uniforms;
-    au.uTime.value = t * T.auroraSpeed; au.uAlpha.value = fade; au.uW0.value = W0 / (W1 * ext);
+    au.uTime.value = t * T.auroraSpeed; au.uAlpha.value = fade; au.uW0.value = W0 / Wmax;
     au.uIntensity.value = T.auroraIntensity; au.uMix.value.set(T.auroraTeal, T.auroraViolet, T.auroraGold);
 
     // ---- envelopes: out of the source, fanning out with the cone ----
@@ -205,9 +218,9 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
       const ends = clamp01(u / 0.07) * clamp01((1 - u) / 0.1);
       if (featured) {
         if (!still && s > 0) {
-          g.position.lerp(bc, pick);
+          g.position.lerp(pickAt, pick);
           g.rotation.x *= 1 - pick; g.rotation.y *= 1 - pick; g.rotation.z *= 1 - pick;
-          g.scale.setScalar(lerp(g.scale.x / bs, 1, pick) * bs);
+          g.scale.setScalar(lerp(g.scale.x / bs, T.pickSize, pick) * bs);
           it.env.setLight(lerp(1, 0, pick));
         }
         it.env.setOpacity(still ? fade : s >= PICK_END ? 0 : 1);
