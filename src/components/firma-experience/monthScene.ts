@@ -39,8 +39,12 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const phase = (s: number, a: number, b: number) => ease(clamp01((s - a) / (b - a)));
 
 const GOLD = "#d9a34a", OKC = "#46b876", BADC = "#ef5a4c", MIXC = "#e8913a";
+// Firma wax-seal crimson — same as the stamp on the report (heroTune.stampColor)
+const CRIMSON = "#8f1d2c";
 const COLS = 4, ROWS = 3;
 const RW = 2.2, RH = 2.9; // the report, in its own units
+// Named regimes whose record-keeping / audit obligations a sealed FIRMA trail supports (not a certification claim).
+const AUDIT_REGS = ["EU AI Act", "GDPR", "SOX", "DORA", "ISO/IEC 42001"] as const;
 const canvasOf = (w: number, h: number) => Object.assign(document.createElement("canvas"), { width: w, height: h });
 function rrect(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   c.beginPath();
@@ -48,6 +52,35 @@ function rrect(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: 
   c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
 }
 const tierColor = (v: number) => (v >= 0.67 ? OKC : v >= 0.34 ? MIXC : BADC);
+
+/** Small verification-frame badge (matches the site Stamp: crimson corners, mono label). */
+function drawRegBadge(c: CanvasRenderingContext2D, label: string, x: number, y: number, h: number, F: Fonts) {
+  c.font = `600 ${Math.round(h * 0.42)}px ${F.mono}`;
+  const padX = Math.round(h * 0.38);
+  const w = Math.ceil(c.measureText(label).width) + padX * 2;
+  c.fillStyle = "rgba(16,20,28,0.92)";
+  c.fillRect(x, y, w, h);
+  c.strokeStyle = "rgba(143,29,44,0.55)";
+  c.lineWidth = 1.5;
+  c.strokeRect(x + 0.75, y + 0.75, w - 1.5, h - 1.5);
+  // bracket corners, like the site Stamp
+  const corner = Math.max(6, Math.round(h * 0.28));
+  c.strokeStyle = CRIMSON;
+  c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(x, y + corner); c.lineTo(x, y); c.lineTo(x + corner, y);
+  c.moveTo(x + w, y + h - corner); c.lineTo(x + w, y + h); c.lineTo(x + w - corner, y + h);
+  c.stroke();
+  c.fillStyle = CRIMSON;
+  const dot = Math.max(3, Math.round(h * 0.14));
+  c.fillRect(x + padX * 0.45, y + (h - dot) / 2, dot, dot);
+  c.fillStyle = "#e7eaf0";
+  c.textAlign = "left";
+  c.textBaseline = "middle";
+  c.fillText(label, x + padX * 0.45 + dot + Math.round(h * 0.18), y + h / 2 + 1);
+  c.textBaseline = "alphabetic";
+  return w;
+}
 
 type Fonts = { sans: string; mono: string };
 
@@ -95,39 +128,49 @@ function drawCover(cv: HTMLCanvasElement, m: Month, F: Fonts) {
   c.fillStyle = GOLD; c.font = `600 44px ${F.sans}`; c.fillText("Decisions inside.", 108, 800);
   c.fillStyle = "#5c6678"; c.font = `500 30px ${F.mono}`;
   c.fillText(`${m.deals.length} deals · ${m.scored} scores checked`, 108, 880);
+  // cover line: named regimes, phrased as support for obligations (not a compliance claim)
+  c.fillStyle = CRIMSON; c.font = `600 22px ${F.mono}`;
+  c.fillText("AUDIT-READY FOR", 108, 1000);
+  c.fillStyle = "#94a0b4"; c.font = `500 24px ${F.sans}`;
+  c.fillText("Supports your record-keeping and audit", 108, 1048);
+  c.fillText("obligations under", 108, 1084);
+  c.fillStyle = "#c3cad6"; c.font = `600 23px ${F.mono}`;
+  c.fillText(AUDIT_REGS.join("  ·  "), 108, 1136);
 }
 
 // The month-end summary page: how many scores matched reality, who to trust, the decisions, all sealed.
 function drawSummary(cv: HTMLCanvasElement, m: Month, F: Fonts, big: boolean) {
-  const c = cv.getContext("2d")!, W = cv.width, H = cv.height, z = big ? 1.1 : 1;
+  const c = cv.getContext("2d")!, W = cv.width, H = cv.height;
+  // phone draws the book smaller, so type is bumped; keep rhythm slightly tighter so the audit row still fits
+  const z = big ? 1.06 : 1;
   const px = (n: number) => Math.round(n * z);
   c.fillStyle = "#131924"; c.fillRect(0, 0, W, H);
   c.strokeStyle = GOLD; c.lineWidth = 5;
   c.beginPath(); c.moveTo(40, 110); c.lineTo(40, 40); c.lineTo(110, 40);
   c.moveTo(W - 40, H - 110); c.lineTo(W - 40, H - 40); c.lineTo(W - 110, H - 40); c.stroke();
   const L = 76;
-  let y = px(104);
+  let y = px(96);
   c.fillStyle = GOLD; c.font = `600 ${px(27)}px ${F.mono}`; c.fillText("FIRMA · MONTH-END REPORT", L, y);
-  y += px(70);
+  y += px(62);
   c.fillStyle = "#e7eaf0"; c.font = `700 ${px(54)}px ${F.sans}`; c.fillText("This month, checked.", L, y);
-  y += px(150);
+  y += px(130);
   c.fillStyle = "#f2f4f8"; c.font = `700 ${px(140)}px ${F.sans}`;
   const big1 = `${m.matched}`, big2 = ` / ${m.scored}`;
   c.fillText(big1, L - 4, y);
   const w1 = c.measureText(big1).width;
   c.fillStyle = "#5c6678"; c.font = `600 ${px(70)}px ${F.sans}`; c.fillText(big2, L + w1, y);
-  y += px(52);
+  y += px(48);
   c.fillStyle = "#c3cad6"; c.font = `500 ${px(34)}px ${F.sans}`; c.fillText("scores matched reality", L, y);
-  y += px(44);
+  y += px(40);
   c.fillStyle = "#5c6678"; c.font = `500 ${px(24)}px ${F.mono}`;
   c.fillText(m.open ? `${m.deals.length} deals · ${m.closed} closed · ${m.open} still open` : `${m.closed} deals closed this month, won or lost`, L, y);
 
-  y += px(80);
+  y += px(68);
   c.fillStyle = GOLD; c.font = `600 ${px(26)}px ${F.mono}`; c.fillText("WHO TO TRUST", L, y);
-  y += px(24);
+  y += px(20);
   for (const p of m.providers) {
     const col = p.tone === "ok" ? OKC : p.tone === "bad" ? BADC : MIXC;
-    y += px(80);
+    y += px(72);
     c.fillStyle = "#e7eaf0"; c.font = `600 ${px(34)}px ${F.sans}`; c.fillText(p.name, L, y);
     c.font = `700 ${px(24)}px ${F.mono}`;
     const tw = c.measureText(p.verdict).width + 28, tx = W - 70 - tw;
@@ -139,7 +182,7 @@ function drawSummary(cv: HTMLCanvasElement, m: Month, F: Fonts, big: boolean) {
     c.fillStyle = "#94a0b4"; c.font = `600 ${px(22)}px ${F.mono}`; c.fillText(`${p.right}/${p.total}`, bx + bwid + 16, by + px(12));
   }
 
-  y += px(104);
+  y += px(84);
   c.fillStyle = GOLD; c.font = `600 ${px(26)}px ${F.mono}`; c.fillText("DECISIONS", L, y);
   const wrap = (text: string, x: number, y0: number, max: number, lh: number) => {
     let line = "", yy = y0;
@@ -151,19 +194,35 @@ function drawSummary(cv: HTMLCanvasElement, m: Month, F: Fonts, big: boolean) {
     return yy;
   };
   m.decisions.forEach((d, i) => {
-    y += px(62);
+    y += px(54);
     c.fillStyle = GOLD; c.font = `600 ${px(26)}px ${F.mono}`; c.fillText(`0${i + 1}`, L, y);
     c.fillStyle = "#e7eaf0"; c.font = `600 ${px(32)}px ${F.sans}`;
-    y = wrap(d, L + px(58), y, W - L - px(58) - 70, px(40));
+    y = wrap(d, L + px(58), y, W - L - px(58) - 70, px(38));
   });
 
-  // footer: everything above is on the record
-  const fy = H - px(150);
+  // footer: audit-ready badges (from the bottom so phone layouts keep them on the page), then the seal line
+  const fy = H - px(248);
   c.strokeStyle = "#1f2735"; c.lineWidth = 2; c.beginPath(); c.moveTo(L, fy); c.lineTo(W - 70, fy); c.stroke();
+  c.fillStyle = CRIMSON; c.font = `600 ${px(22)}px ${F.mono}`;
+  c.fillText("AUDIT-READY FOR", L, fy + px(36));
+  c.fillStyle = "#94a0b4"; c.font = `500 ${px(21)}px ${F.sans}`;
+  c.fillText("Supports your record-keeping and audit obligations under", L, fy + px(64));
+  const badgeH = px(34), gap = px(8);
+  let bx = L, by = fy + px(80);
+  for (const name of AUDIT_REGS) {
+    c.font = `600 ${Math.round(badgeH * 0.42)}px ${F.mono}`;
+    const need = Math.ceil(c.measureText(name).width) + Math.round(badgeH * 0.38) * 2 + gap;
+    if (bx + need > W - 70 && bx > L) {
+      bx = L;
+      by += badgeH + gap;
+    }
+    bx += drawRegBadge(c, name, bx, by, badgeH, F) + gap;
+  }
+  const sealY = Math.max(by + badgeH + px(24), H - px(100));
   c.fillStyle = "#94a0b4"; c.font = `600 ${px(23)}px ${F.mono}`;
-  c.fillText(`SEALED · ${m.records} records + this report`, L, fy + px(48));
+  c.fillText(`SEALED · ${m.records} records + this report`, L, sealY);
   c.fillStyle = "#5c6678"; c.font = `500 ${px(22)}px ${F.mono}`;
-  c.fillText(`report hash ${m.hash} · FIRMA v2.0`, L, fy + px(88));
+  c.fillText(`report hash ${m.hash} · FIRMA v2.0`, L, sealY + px(36));
 }
 
 export function createMonth(opts: {

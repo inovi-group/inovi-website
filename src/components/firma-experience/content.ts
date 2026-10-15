@@ -170,6 +170,6 @@ export const STEPS: [idx: string, headline: string, what: string, why: string][]
     "Zoom out and this deal is one of many. At month end Firma collects every deal that closed, won or lost, to check the month's scores against them.",
     "One deal is an anecdote. A whole month of outcomes is evidence."],
   ["04 · The report", "One report tells you who to trust.",
-    "Every closed deal goes into a single month-end report, sealed like everything else. It opens on one clean page: how many scores matched reality, which providers to trust, and the decisions to take.",
-    "One place to look, instead of a dozen dashboards that disagree."],
+    "Every closed deal goes into a single month-end report, sealed like everything else. It opens on one clean page: how many scores matched reality, which providers to trust, the decisions to take, and the regimes whose record-keeping it supports.",
+    "One place to look — and a sealed trail that supports your audit obligations under the EU AI Act, GDPR, SOX, DORA and ISO/IEC 42001."],
 ];
