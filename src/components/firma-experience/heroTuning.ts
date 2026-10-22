@@ -51,8 +51,6 @@ export const HERO_DEFAULTS = {
   glowRadius: 0.8,       // how far the glow reaches out from the envelope's edges
   lightCast: 0.6,        // how much each envelope lights up the stardust around it
   stampColor: "#8f1d2c", // Firma's wax seal, wherever it appears
-  // the register: each envelope in the stream is linked to the one before it by a fine gold thread
-  registerLinks: 0.4,    // brightness of the links (0 = no chain)
   // stardust
   dustCount: 260,        // phones show about 40% of these
   dustSize: 0.028,
@@ -116,9 +114,6 @@ export const HERO_PARAMS: { group: string; items: { key: TuneKey; label: string;
   ] },
   { group: "Firma stamp", items: [
     { key: "stampColor", label: "Stamp colour" },
-  ] },
-  { group: "Register chain", items: [
-    { key: "registerLinks", label: "Links between envelopes", min: 0, max: 1.5, step: 0.01 },
   ] },
   { group: "Stardust", items: [
     { key: "dustCount", label: "Count", min: 0, max: 800, step: 10 },

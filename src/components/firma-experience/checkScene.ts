@@ -357,14 +357,6 @@ function drawWax(cv: Cv) {
   c.closePath(); c.fillStyle = "#f3e2b8"; c.fill();
   c.strokeStyle = "#c9b081"; c.lineWidth = W * 0.03;
   c.beginPath(); c.arc(cx, cy, W * 0.33, 0, Math.PI * 2); c.stroke();
-  // a register seal: a ring of chain links pressed around the letter (every entry linked to the one before)
-  c.lineWidth = W * 0.014;
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2;
-    c.save(); c.translate(cx + Math.cos(a) * W * 0.395, cy + Math.sin(a) * W * 0.395); c.rotate(a + Math.PI / 2);
-    c.beginPath(); c.ellipse(0, 0, W * 0.045, W * 0.024, 0, 0, Math.PI * 2); c.stroke();
-    c.restore();
-  }
   c.fillStyle = "#b39a6c"; c.font = `700 ${W * 0.36}px ${F.sans}`; c.textAlign = "center"; c.textBaseline = "middle";
   c.fillText("F", cx, cy + W * 0.02);
 }
@@ -705,7 +697,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
   };
 
   const redraw = () => {
-    drawEnvelopeFace(envCv, { mono: F.mono }); envFace.needsUpdate = true;
+    drawEnvelopeFace(envCv); envFace.needsUpdate = true;
     month.redraw();
     drawWax(waxCv); waxTex.needsUpdate = true; // the seal's letter needs the web font too
     layers.forEach((l) => {

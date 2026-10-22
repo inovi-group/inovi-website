@@ -94,7 +94,7 @@ function drawCard(cv: HTMLCanvasElement, d: MonthDeal, F: Fonts) {
   // the envelope, as large as fits under the label
   const top = m * 0.18, ew = Math.min(W * 0.94, (H - top - m * 0.04) * (ENV.w / ENV.h)), eh = ew * (ENV.h / ENV.w);
   const env = Object.assign(document.createElement("canvas"), { width: Math.round(ew), height: Math.round(eh) });
-  drawEnvelopeFace(env, { mono: F.mono });
+  drawEnvelopeFace(env);
   const ex = (W - ew) / 2, ey = top + (H - top - eh) / 2;
   c.drawImage(env, ex, ey);
   // the outcome, stamped across it
