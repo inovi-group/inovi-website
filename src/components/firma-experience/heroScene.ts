@@ -1,5 +1,7 @@
 import {
   type PerspectiveCamera,
+  LineBasicMaterial,
+  LineSegments,
   MeshBasicMaterial,
   AdditiveBlending,
   NormalBlending,
@@ -25,6 +27,7 @@ import { heroTune as T, LIMITS } from "./heroTuning";
 /**
  * The hero background. A spotlight shines down from a point at the top right; sealed contract envelopes come
  * out of that point and fan out as they fall, following the widening cone of light toward the middle bottom.
+ * The stream is a register: each envelope is linked to the one before it by a fine gold thread (the hash link).
  * Behind the beam, slow aurora ribbons; in and around it, fine stardust catching the light. Everything is
  * drawn crisp (additive shaders, no blur pass). Envelopes inside the beam are lit by it.
  * When the visitor starts scrolling (story step 0 → 0.45), the best placed falling envelope is picked out
@@ -186,6 +189,15 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
     it.env.g.add(m);
     return m;
   });
+
+  // the register's links: one segment from each envelope to the next one down the stream
+  const linkGeo = new BufferGeometry();
+  linkGeo.setAttribute("position", new BufferAttribute(new Float32Array(LIMITS.envelopes * 6), 3));
+  linkGeo.setAttribute("color", new BufferAttribute(new Float32Array(LIMITS.envelopes * 6), 3));
+  const links = new LineSegments(linkGeo, new LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, blending: AdditiveBlending }));
+  links.renderOrder = -0.9;
+  hero.add(links);
+  const order: number[] = [];
 
   const E = new Vector3(), P1 = new Vector3(), dir = new Vector3(), perp = new Vector3(), pos = new Vector3(), mid = new Vector3();
   const warm = new Color("#ffe2a8");
@@ -389,6 +401,27 @@ export function createHero(opts: { parent: Group; deal: Group; face: Texture; ma
       u.uPlane.value.set(pw, ph); u.uHalf.value.set(ENV.w / 2, ENV.h / 2); u.uFall.value = fall;
       u.uOpacity.value = Math.min(1.5, 0.9 * on);
     });
+
+    // ---- the register's links: envelopes in stream order, each joined to the next (bottom edge to top edge) ----
+    order.length = 0;
+    for (let k = 0; k < count; k++) if (k !== picked && items[k].env.g.visible) order.push(k);
+    order.sort((a, b) => items[a].u - items[b].u);
+    const lp = linkGeo.attributes.position.array as Float32Array, lc = linkGeo.attributes.color.array as Float32Array;
+    let nl = 0;
+    for (let i = 0; i + 1 < order.length && T.registerLinks > 0; i++) {
+      const a = items[order[i]], b = items[order[i + 1]];
+      const ga = a.env.g, gb = b.env.g;
+      const al = Math.min(a.ends, b.ends) * fade * T.registerLinks;
+      if (al < 0.01) continue;
+      const ha = ENV.h * 0.5 * ga.scale.y, hb = ENV.h * 0.5 * gb.scale.y;
+      lp.set([ga.position.x, ga.position.y - ha, ga.position.z, gb.position.x, gb.position.y + hb, gb.position.z], nl * 6);
+      lc.set([0.85 * al, 0.62 * al, 0.26 * al, 0.85 * al, 0.62 * al, 0.26 * al], nl * 6);
+      nl++;
+    }
+    linkGeo.setDrawRange(0, nl * 2);
+    linkGeo.attributes.position.needsUpdate = true;
+    linkGeo.attributes.color.needsUpdate = true;
+    linkGeo.computeBoundingSphere();
 
     // ---- stardust ----
     const nd = Math.min(LIMITS.dust, Math.round(T.dustCount * (wide ? 1 : 0.42)));

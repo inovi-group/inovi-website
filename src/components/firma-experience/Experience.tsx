@@ -10,6 +10,7 @@ import { mountStory } from "./story";
 import { pageTop } from "./listen";
 import type { SceneApi } from "./ExperienceScene";
 import { TunePanel } from "./TunePanel";
+import { TRUST_FEATURES } from "./trustFeatures";
 import "./experience.css";
 
 // WebGL only in the browser: the static export ships the page text, the scene mounts on the client.
@@ -66,6 +67,30 @@ function StepBody({ step: [idx, h, what, why], i }: { step: (typeof STEPS)[numbe
       <p className="what">{what}</p>
       <p className="why"><b>Why it matters</b>{why}</p>
     </div>
+  );
+}
+
+// Everything you can trust: one card per entry in trustFeatures.ts (toggle them there)
+function TrustFeatures() {
+  const list = TRUST_FEATURES.filter((f) => f.on);
+  if (!list.length) return null;
+  return (
+    <section className="section trust" id="trust" aria-labelledby="h-trust">
+      <div>
+        <span className="idx">05 · Everything you can trust</span>
+        <h2 id="h-trust">Systems you don&apos;t have to watch.</h2>
+        <p className="trust-lede">The register is the foundation. On top of it, Firma keeps checking your scores, models and forecasts against reality, so you hear about a problem before it reaches a decision.</p>
+        <ul className="trust-grid">
+          {list.map((f) => (
+            <li key={f.title} className={f.pillar ? "pillar" : undefined}>
+              <span className="trust-tag"><f.icon size={15} aria-hidden="true" />{f.tag}</span>
+              <b>{f.title}</b>
+              <p>{f.text}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }
 
@@ -184,18 +209,18 @@ export function Experience() {
       <div className="fx-content">
         <section className="section hero calm" id="top">
           <div className="hero-copy">
-            <Stamp tone="firma">FIRMA · Deal-score assurance</Stamp>
-            <h1>Know which deal scores <em>to trust.</em></h1>
+            <Stamp tone="firma">FIRMA · Trusted deal records</Stamp>
+            <h1>Deal records you can <em>trust.</em></h1>
             <p className="lede">
-              Your CRM is full of risk scores, from revenue tools and from your reps&apos; own forecasts. Firma checks
-              them against what actually happens, tells you which to believe, and seals every score and decision in
-              an audit trail that cannot be quietly rewritten.
+              Firma seals every score, forecast and decision into a tamper-proof register your auditors can verify. It
+              writes your month-end report for you, keeps every record one search away, and tells you when a score,
+              a model or its data starts to drift.
             </p>
             <ul className="values">
-              <li><b>Checks the scores you already have</b><span>Every provider score on every deal, tested against real outcomes.</span></li>
-              <li><b>Tells you which to trust</b><span>A trust grade for each source, so you know which number to act on.</span></li>
-              <li><b>Clear decisions, every month</b><span>A month-end report with calls to make, not more numbers.</span></li>
-              <li><b>Sealed, verifiable record</b><span>Every score and decision hashed with SHA3-512 and chained. Integrity you verify, not a claim you trust.</span></li>
+              <li><b>A tamper-proof register</b><span>Every score and decision sealed as it happens, append-only, verifiable by your auditors.</span></li>
+              <li><b>Month-end report, done for you</b><span>The month gathered, checked and written up. Sealed and ready to share.</span></li>
+              <li><b>Anything, one search away</b><span>Any score, decision or record, with the evidence beside it.</span></li>
+              <li><b>Drift caught early</b><span>Alerts when a score source, model or its data starts to slip.</span></li>
             </ul>
             <Ctas />
             <div className="scroll-cue">Scroll: how it works</div>
@@ -220,11 +245,13 @@ export function Experience() {
           ))
         )}
 
+        <TrustFeatures />
+
         <section className="section calm close" id="summary" aria-labelledby="h-end">
           <div className="step">
-            <span className="idx">FIRMA · Deal-score assurance</span>
-            <h2 id="h-end">See which of your deal scores to trust.</h2>
-            <p>A sealed, verifiable record of every score, outcome and decision, and a month-end report that tells you what to act on.</p>
+            <span className="idx">FIRMA · Trusted deal records</span>
+            <h2 id="h-end">Trust the record. Skip the month-end scramble.</h2>
+            <p>A tamper-proof register of every score, outcome and decision, a month-end report written for you, and alerts the moment something drifts.</p>
             <Ctas />
             <p className="fineprint">Record hashes are real SHA3-512 values in the FIRMA v2.0 format, computed in your browser.</p>
           </div>

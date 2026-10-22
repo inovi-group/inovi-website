@@ -50,7 +50,7 @@ function chainFor(scores: Score[], outcome: Outcome): ChainRecord[] {
     { type: "CR", kind: "Policy", title: "Seal every score as it lands", content: { rule: "snapshot_score_sources" }, token: "" },
     ...scores.map((s, i) => ({ type: "CPR", kind: i === 2 ? "Forecast" : "Score", title: s.label, content: { source: s.kicker, kind: "score" }, token: s.token })),
     { type: "CPR", kind: "Outcome", title: `Outcome: deal ${outcome}`, content: { kind: "outcome", result: outcome }, token: `Deal ${outcome}` },
-    { type: "DR", kind: "Decision", title: `Decision: trust ${TRUSTED[outcome]}`, content: { decision: "prefer_source", prefer: TRUSTED[outcome] }, token: "Decision" },
+    { type: "DR", kind: "Decision", title: `Decision: rely on ${TRUSTED[outcome]}`, content: { decision: "prefer_source", prefer: TRUSTED[outcome] }, token: "Decision" },
   ];
   let prev: string | null = null;
   return drafts.map((r, k) => {
@@ -87,7 +87,7 @@ export function createStoryData(outcome: Outcome): StoryData {
 export function applyOutcome(d: StoryData, outcome: Outcome) {
   d.scores.forEach((s, i) => { s.check = VERDICTS[outcome][i]; });
   d.reality.result = outcome;
-  d.decision.title = `Trust ${TRUSTED[outcome]} on late-stage deals.`;
+  d.decision.title = `Rely on ${TRUSTED[outcome]} for late-stage deals.`;
   chainFor(d.scores, outcome).forEach((r, k) => Object.assign(d.records[k], r));
   const forged = structuredClone(d.records[TAMPER].rec);
   forged.content.edited = true;
@@ -114,13 +114,13 @@ function monthFor(d: StoryData, outcome: Outcome): Month {
   const names = ["Provider A", "Provider B", "Reps' forecasts"];
   const providers: ProviderLine[] = names.map((name, k) => ({
     name, right: rightOf(k), total: closed.length,
-    ...(name === trusted ? { verdict: "TRUST", tone: "ok" as const }
+    ...(name === trusted ? { verdict: "RELIABLE", tone: "ok" as const }
       : name === other ? { verdict: outcome === "won" ? "TOO PESSIMISTIC" : "OVERCONFIDENT", tone: "bad" as const }
       : { verdict: "MIXED", tone: "mixed" as const }),
   }));
   const decisions = [
-    `Trust ${trusted} on late-stage deals.`,
-    `Treat ${other}'s scores as unconfirmed.`,
+    `Rely on ${trusted} for late-stage deals.`,
+    `Drift alert: review ${other}'s model.`,
     `Ask reps to re-forecast deals ${trusted} flags.`,
   ];
   const matched = providers.reduce((a, p) => a + p.right, 0);
@@ -138,38 +138,40 @@ function monthFor(d: StoryData, outcome: Outcome): Month {
 }
 
 // The story, one step per scene step (1–11): a big headline, what happens, and why it matters.
+// The theme is trust in the record itself: a tamper-proof register, a month-end report done for you,
+// everything easy to find, and drift caught before it matters. Which provider is right is a supporting detail.
 export const STEPS: [idx: string, headline: string, what: string, why: string][] = [
-  ["01 · One deal", "Pick one deal. Look inside.",
-    "Every deal arrives as a sealed contract, carrying the scores your tools and your team put on it. Firma takes one out of the flow and scans it, so every score inside is in plain view.",
-    "You can't decide what to trust while the scores stay sealed away in different tools."],
-  ["01 · A score lands", "A score lands. Firma seals it.",
-    "A revenue tool or your CRM puts a risk score on the deal. The moment it arrives, Firma takes a snapshot and seals it into a tamper-proof record beside the deal.",
-    "Scores get overwritten every night. The sealed copy is what the provider actually said, when it said it."],
-  ["01 · Every source", "Every score, from every source.",
-    "A second provider scores the same deal and disagrees. Its score is sealed too, and linked to the record before it, so the order can't be changed.",
-    "Every opinion stays side by side, not just whichever tool you happened to open last."],
-  ["01 · Your team", "Your reps' forecasts too.",
-    "The deal owner's own call goes on the record the same way: exactly as it was given, at the time it was given.",
-    "Nobody can argue later about what was said, or quietly adjust a forecast after the fact."],
-  ["02 · Reality", "Then the deal closes.",
-    "Won, lost or slipped: Firma reads the real outcome from your CRM and seals it into the same chain as the scores.",
-    "Every score now has a verdict to be measured against, and the verdict is on the record too."],
-  ["02 · The check", "Firma checks every score against reality.",
-    "Each sealed score is compared with what really happened. Which source called it, which was overconfident, which was only ever a default.",
-    "Trust is earned on outcomes, tested on the record, not on a vendor's claims or anyone's memory."],
-  ["03 · Decision", "It tells you which score to trust.",
-    "Firma makes a clear call from the evidence, such as trusting the provider that called it on late-stage deals, and seals that decision as the next link in the chain.",
-    "You act on the number that has been right, and you can show why you chose it."],
-  ["03 · Verify", "Anyone can check it.",
-    "Each record carries a SHA3-512 hash of its contents and points to the hash of the one before. Recompute them and follow the links back to the first record.",
-    "Integrity is a property you verify yourself, not a claim you have to trust."],
-  ["03 · Can't be quietly rewritten", "Change a sealed score and the chain shows it.",
-    "Edit any record after the fact and its hash changes. The next record still points to the old one, so the link breaks and the seal cracks.",
+  ["01 · The register", "Every deal enters a register you can trust.",
+    "Each deal arrives as a sealed contract carrying the scores your tools and your team put on it. Firma opens one, so everything inside is in plain view, and gives it its place in an append-only register.",
+    "Auditors don't have to take your word for it: every entry in the register can be checked."],
+  ["01 · Sealed on arrival", "A score lands. It's sealed into the register.",
+    "A revenue tool or your CRM puts a score on the deal. The moment it arrives, Firma snapshots it and seals it as the next entry: hashed, timestamped and linked to the entry before.",
+    "Scores get overwritten every night. The register keeps what was actually said, and when."],
+  ["01 · Append-only", "Entries are only ever added.",
+    "A second source scores the same deal. Its score becomes the next entry, chained to the last, so nothing can be slipped in, reordered or removed after the fact.",
+    "One complete, ordered history of every score, from every tool, in one place you can search."],
+  ["01 · Your team", "Forecasts go on the record too.",
+    "The deal owner's own call is entered the same way: exactly as it was given, at the time it was given.",
+    "No arguing later about what was said, and no quiet edits to a forecast."],
+  ["02 · Reality", "Then the deal closes. That's entered too.",
+    "Won, lost or slipped: Firma reads the real outcome and close date from your CRM and seals them into the same register as the scores.",
+    "Every score and every forecast now has a real result to be measured against, on the record."],
+  ["02 · Drift", "Firma keeps watching, so you don't have to.",
+    "Each sealed score is checked against what really happened. Over time Firma tracks every source's accuracy and calibration, and alerts you when a score, a model or its data starts to drift.",
+    "You can trust your systems without babysitting them: Firma tells you the moment one stops being reliable."],
+  ["02 · Decision", "Decisions are sealed with their evidence.",
+    "When a call is made, such as leaning on the source that has been right on late-stage deals, Firma enters it with the evidence behind it, as the next link in the chain.",
+    "Months later you can show what was decided, when, and on what basis."],
+  ["03 · Audit", "Your auditors can verify it themselves.",
+    "Every entry carries a SHA3-512 hash of its contents and points to the hash of the one before. Anyone can recompute them with the open validator and follow the links back to the first entry.",
+    "Trust that is checked, not claimed. No vendor access needed."],
+  ["03 · Tamper-evident", "Change one entry and the register shows it.",
+    "Edit any record after the fact and its hash changes. The next entry still points to the old one, so the link breaks and the seal cracks, in plain view.",
     "History can't be rewritten in secret, by a vendor, a rep or anyone else."],
-  ["04 · The whole month", "Then the whole month.",
-    "Zoom out and this deal is one of many. At month end Firma collects every deal that closed, won or lost, to check the month's scores against them.",
-    "One deal is an anecdote. A whole month of outcomes is evidence."],
-  ["04 · The report", "One report tells you who to trust.",
-    "Every closed deal goes into a single month-end report, sealed like everything else. It opens on one clean page: how many scores matched reality, which providers to trust, the decisions to take, and the regimes whose record-keeping it supports.",
-    "One place to look — and a sealed trail that supports your audit obligations under the EU AI Act, GDPR, SOX, DORA and ISO/IEC 42001."],
+  ["04 · Month end", "Month end. Firma writes the report.",
+    "Zoom out and this deal is one of many in the register. At month end Firma gathers every deal, closed or still open, and builds the report for you.",
+    "No spreadsheets to assemble, no numbers to chase. And any score, decision or record is one search away."],
+  ["04 · The report", "Your month-end report, ready and sealed.",
+    "One clean report: how the month's scores held up against reality, what drifted, the decisions taken, and the regimes whose record-keeping it supports. It is sealed as the next entry in the register.",
+    "Ready to hand to finance, the board or an auditor, and it supports your audit obligations under the EU AI Act, GDPR, SOX, DORA and ISO/IEC 42001."],
 ];

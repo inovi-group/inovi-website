@@ -21,9 +21,8 @@ export const FLAP_Y = 0.08; // the flap's tip, as a share of the height above th
 
 type Emblem = { g: Group; set(lock: number, ver: number, brk: number, alpha: number): void };
 
-// the paper face: a dark contract envelope with its flap and a few faint address lines (no text that needs reading)
 // the paper face: a metallic gold contract envelope (a brushed sheen baked in diagonally, so it reads as metal
-// rather than flat yellow), with its flap, folds, a few address lines and a small handshake
+// rather than flat yellow), with its flap, folds, its register entry (embossed, with a chain link) and a small handshake
 export function drawEnvelopeFace(cv: HTMLCanvasElement, opts: { label?: string; mono?: string } = {}) {
   const c = cv.getContext("2d")!, W = cv.width, H = cv.height;
   const g = c.createLinearGradient(0, 0, W, H);
@@ -49,9 +48,17 @@ export function drawEnvelopeFace(cv: HTMLCanvasElement, opts: { label?: string; 
   // the lower folds
   c.strokeStyle = "rgba(60,38,8,0.3)";
   c.beginPath(); c.moveTo(0, H); c.lineTo(W * 0.42, H * 0.55); c.moveTo(W, H); c.lineTo(W * 0.58, H * 0.55); c.stroke();
-  // faint embossed address lines, bottom left
-  c.fillStyle = "rgba(60,38,8,0.28)";
-  [0.72, 0.79, 0.86].forEach((y, i) => c.fillRect(W * 0.08, H * y, W * (0.3 - i * 0.06), H * 0.018));
+  // embossed bottom left: its register entry, a hash and the link back to the entry before
+  // (the envelope is one entry in an append-only, tamper-proof register)
+  c.fillStyle = "rgba(60,38,8,0.55)";
+  c.font = `600 ${Math.round(H * 0.052)}px ${opts.mono ?? "monospace"}`;
+  c.fillText("REGISTER ENTRY", W * 0.08, H * 0.75);
+  c.fillStyle = "rgba(60,38,8,0.3)";
+  [0.8, 0.86].forEach((y, i) => {
+    for (let k = 0; k < 14 - i * 4; k++) c.fillRect(W * (0.08 + k * 0.019), H * y, W * 0.013, H * 0.026); // hash digits
+  });
+  c.strokeStyle = "rgba(60,38,8,0.4)"; c.lineWidth = H * 0.012;
+  [0, 1].forEach((k) => { c.beginPath(); c.ellipse(W * (0.255 + k * 0.035), H * 0.873, W * 0.022, H * 0.022, 0, 0, Math.PI * 2); c.stroke(); }); // a chain link
   // a small handshake, pressed into the bottom right corner: this envelope is a deal
   handshake(c, W * 0.85, H * 0.8, H * 0.15, "rgba(60,38,8,0.5)");
   if (opts.label) {

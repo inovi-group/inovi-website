@@ -94,7 +94,7 @@ function drawCard(cv: HTMLCanvasElement, d: MonthDeal, F: Fonts) {
   // the envelope, as large as fits under the label
   const top = m * 0.18, ew = Math.min(W * 0.94, (H - top - m * 0.04) * (ENV.w / ENV.h)), eh = ew * (ENV.h / ENV.w);
   const env = Object.assign(document.createElement("canvas"), { width: Math.round(ew), height: Math.round(eh) });
-  drawEnvelopeFace(env);
+  drawEnvelopeFace(env, { mono: F.mono });
   const ex = (W - ew) / 2, ey = top + (H - top - eh) / 2;
   c.drawImage(env, ex, ey);
   // the outcome, stamped across it
@@ -124,8 +124,8 @@ function drawCover(cv: HTMLCanvasElement, m: Month, F: Fonts) {
   c.fillStyle = "#f2e6cc"; c.font = `700 52px ${F.sans}`; c.fillText("FIRMA", 158, 198);
   c.fillStyle = "#94a0b4"; c.font = `600 30px ${F.mono}`; c.fillText("MONTH-END REPORT", 112, 262);
   c.fillStyle = "#e7eaf0"; c.font = `700 112px ${F.sans}`;
-  c.fillText("This month's", 104, 470); c.fillText("scores,", 104, 590); c.fillText("checked.", 104, 710);
-  c.fillStyle = GOLD; c.font = `600 44px ${F.sans}`; c.fillText("Decisions inside.", 108, 800);
+  c.fillText("Your month", 104, 470); c.fillText("end, done", 104, 590); c.fillText("for you.", 104, 710);
+  c.fillStyle = GOLD; c.font = `600 44px ${F.sans}`; c.fillText("Sealed. Ready for audit.", 108, 800);
   c.fillStyle = "#5c6678"; c.font = `500 30px ${F.mono}`;
   c.fillText(`${m.deals.length} deals · ${m.scored} scores checked`, 108, 880);
   // cover line: named regimes, phrased as support for obligations (not a compliance claim)
@@ -138,7 +138,7 @@ function drawCover(cv: HTMLCanvasElement, m: Month, F: Fonts) {
   c.fillText(AUDIT_REGS.join("  ·  "), 108, 1136);
 }
 
-// The month-end summary page: how many scores matched reality, who to trust, the decisions, all sealed.
+// The month-end summary page: how many scores matched reality, how reliable each source was, the decisions, all sealed.
 function drawSummary(cv: HTMLCanvasElement, m: Month, F: Fonts, big: boolean) {
   const c = cv.getContext("2d")!, W = cv.width, H = cv.height;
   // phone draws the book smaller, so type is bumped; keep rhythm slightly tighter so the audit row still fits
@@ -166,7 +166,7 @@ function drawSummary(cv: HTMLCanvasElement, m: Month, F: Fonts, big: boolean) {
   c.fillText(m.open ? `${m.deals.length} deals · ${m.closed} closed · ${m.open} still open` : `${m.closed} deals closed this month, won or lost`, L, y);
 
   y += px(68);
-  c.fillStyle = GOLD; c.font = `600 ${px(26)}px ${F.mono}`; c.fillText("WHO TO TRUST", L, y);
+  c.fillStyle = GOLD; c.font = `600 ${px(26)}px ${F.mono}`; c.fillText("SOURCE RELIABILITY", L, y);
   y += px(20);
   for (const p of m.providers) {
     const col = p.tone === "ok" ? OKC : p.tone === "bad" ? BADC : MIXC;
