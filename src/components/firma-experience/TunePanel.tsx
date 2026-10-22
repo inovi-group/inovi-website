@@ -1,45 +1,53 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { HERO_DEFAULTS, HERO_PARAMS, heroTune, TUNE_STORE, type HeroTune, type TuneKey } from "./heroTuning";
+import { HERO_DEFAULTS, HERO_PARAMS, heroTune, TUNE_STORE } from "./heroTuning";
 
-// Live tuning for the envelope hero (?tune=1 only). Sliders write straight into heroTune, which the scene reads
-// every frame; the values are kept in this browser's localStorage and can be copied out as JSON.
-function load(): Partial<HeroTune> {
+// Live tuning for a 3D scene (?tune=1 only). Sliders write straight into the live values object, which the
+// scene reads every frame; the values are kept in this browser's localStorage and can be copied out as JSON.
+// With no props it tunes the Firma envelope hero; other pages pass their own defaults, groups and store key.
+type Values = Record<string, number | string>;
+type Group = { group: string; items: { key: string; label: string; min?: number; max?: number; step?: number }[] };
+type Props = { defaults?: Values; params?: Group[]; live?: Values; store?: string; title?: string; hint?: string };
+
+function load(defaults: Values, store: string): Values {
   try {
-    const raw = window.localStorage.getItem(TUNE_STORE);
+    const raw = window.localStorage.getItem(store);
     if (!raw) return {};
     const v = JSON.parse(raw) as Record<string, unknown>;
-    const out: Partial<Record<TuneKey, unknown>> = {};
-    (Object.keys(HERO_DEFAULTS) as TuneKey[]).forEach((k) => {
-      if (typeof v[k] === typeof HERO_DEFAULTS[k]) out[k] = v[k];
+    const out: Values = {};
+    Object.keys(defaults).forEach((k) => {
+      if (typeof v[k] === typeof defaults[k]) out[k] = v[k] as number | string;
     });
-    return out as Partial<HeroTune>;
+    return out;
   } catch { return {}; }
 }
-function save(v: HeroTune) {
-  try { window.localStorage.setItem(TUNE_STORE, JSON.stringify(v)); } catch { /* private mode: values just aren't kept */ }
+function save(v: Values, store: string) {
+  try { window.localStorage.setItem(store, JSON.stringify(v)); } catch { /* private mode: values just aren't kept */ }
 }
 
 const decimals = (step = 0.01) => Math.max(0, -Math.floor(Math.log10(step)));
 
-export function TunePanel() {
-  const [vals, setVals] = useState<HeroTune>({ ...heroTune });
+export function TunePanel({
+  defaults = HERO_DEFAULTS as Values, params = HERO_PARAMS as Group[], live = heroTune as Values, store = TUNE_STORE,
+  title = "Hero tuning", hint = "Scroll to the top to see the hero. Changes apply live and are kept in this browser.",
+}: Props) {
+  const [vals, setVals] = useState<Values>({ ...live });
   const [open, setOpen] = useState(true);
   const [note, setNote] = useState("");
   const box = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    Object.assign(heroTune, load());
-    setVals({ ...heroTune });
+    Object.assign(live, load(defaults, store));
+    setVals({ ...live });
     setOpen(window.innerWidth > 760);
-  }, []);
+  }, [defaults, live, store]);
 
-  const set = <K extends TuneKey>(k: K, v: HeroTune[K]) => {
-    heroTune[k] = v;
-    const next = { ...heroTune };
+  const set = (k: string, v: number | string) => {
+    live[k] = v;
+    const next = { ...live };
     setVals(next);
-    save(next);
+    save(next, store);
   };
   const json = JSON.stringify(vals, null, 2);
   async function copy() {
@@ -48,23 +56,23 @@ export function TunePanel() {
     window.setTimeout(() => setNote(""), 2200);
   }
   function reset() {
-    Object.assign(heroTune, HERO_DEFAULTS);
-    setVals({ ...heroTune });
-    try { window.localStorage.removeItem(TUNE_STORE); } catch { /* nothing kept */ }
+    Object.assign(live, defaults);
+    setVals({ ...live });
+    try { window.localStorage.removeItem(store); } catch { /* nothing kept */ }
     setNote("Reset to defaults");
     window.setTimeout(() => setNote(""), 2200);
   }
 
   return (
-    <aside className="tune" aria-label="Hero tuning">
+    <aside className="tune" aria-label={title}>
       <div className="tune-head">
-        <b>Hero tuning</b>
+        <b>{title}</b>
         <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}>{open ? "Hide" : "Show"}</button>
       </div>
       {open && (
         <div className="tune-body">
-          <p className="tune-hint">Scroll to the top to see the hero. Changes apply live and are kept in this browser.</p>
-          {HERO_PARAMS.map((g) => (
+          <p className="tune-hint">{hint}</p>
+          {params.map((g) => (
             <fieldset key={g.group}>
               <legend>{g.group}</legend>
               {g.items.map((p) => {
@@ -73,7 +81,7 @@ export function TunePanel() {
                   return (
                     <label key={p.key} className="tune-row">
                       <span>{p.label}</span>
-                      <input type="color" value={v} onChange={(e) => set(p.key, e.target.value as never)} />
+                      <input type="color" value={v} onChange={(e) => set(p.key, e.target.value)} />
                       <output>{v}</output>
                     </label>
                   );
@@ -82,7 +90,7 @@ export function TunePanel() {
                   <label key={p.key} className="tune-row">
                     <span>{p.label}</span>
                     <input type="range" min={p.min} max={p.max} step={p.step} value={v}
-                      onChange={(e) => set(p.key, Number(e.target.value) as never)} />
+                      onChange={(e) => set(p.key, Number(e.target.value))} />
                     <output>{v.toFixed(decimals(p.step))}</output>
                   </label>
                 );
