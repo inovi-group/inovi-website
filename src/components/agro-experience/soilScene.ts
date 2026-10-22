@@ -97,7 +97,7 @@ const FIELD = /* glsl */ `
     return wet;
   }`;
 
-function soilUniforms() {
+export function soilUniforms() {
   return {
     uTop: { value: BLOCK.top }, uTime: { value: 0 }, uF: { value: 0 }, uDry: { value: 0 }, uMap: { value: 0 }, uFlow: { value: 0 },
     uSoil0: { value: new Color() }, uSoil1: { value: new Color() }, uSoil2: { value: new Color() }, uWater: { value: new Color() },
@@ -228,7 +228,7 @@ function tubeMaterial() {
 }
 
 // the column of light from above, behind the block
-function beamMaterial() {
+export function beamMaterial() {
   return new ShaderMaterial({
     uniforms: { uTime: { value: 0 }, uAlpha: { value: 0.3 }, uColor: { value: new Color() } },
     vertexShader: /* glsl */ `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -250,7 +250,7 @@ function beamMaterial() {
 }
 
 // the floor: a faint hairline grid (the site's backdrop motif) fading out around a soft glow under the block
-function plinthMaterial() {
+export function plinthMaterial() {
   return new ShaderMaterial({
     uniforms: { uAlpha: { value: 0.5 }, uColor: { value: new Color("#3d8f6a") } },
     vertexShader: /* glsl */ `varying vec2 vP; void main() { vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -270,7 +270,7 @@ function plinthMaterial() {
   });
 }
 
-function dotTexture() {
+export function dotTexture() {
   const cv = Object.assign(document.createElement("canvas"), { width: 64, height: 64 });
   const c = cv.getContext("2d")!, g = c.createRadialGradient(32, 32, 0, 32, 32, 32);
   g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.25, "rgba(255,255,255,0.55)"); g.addColorStop(1, "rgba(255,255,255,0)");
@@ -360,37 +360,7 @@ export function createSoil({ stage, camera, fonts }: { stage: Group; camera: Per
   const block = new Group();
   world.add(block);
 
-  // ---- the soil body: three visible faces (front cut, right side, top) ----
-  const SU = soilUniforms();
-  const { w: W, d: D, h: H, top: TOP } = BLOCK;
-  const faceDefs: [PlaneGeometry, (m: Mesh) => void, number, boolean][] = [
-    [new PlaneGeometry(W, H, 1, 1), (m) => m.position.set(0, TOP - H / 2, D / 2), 1.0, false],
-    [new PlaneGeometry(D, H, 1, 1), (m) => { m.position.set(W / 2, TOP - H / 2, 0); m.rotation.y = Math.PI / 2; }, 0.7, false],
-    [new PlaneGeometry(W, D, 1, 1), (m) => { m.position.set(0, TOP, 0); m.rotation.x = -Math.PI / 2; }, 1.12, true],
-  ];
-  const plantsGeo = buildPlants(rnd);
-  const plantsMat = plantsMaterial();
-  const tubeMat = tubeMaterial();
-  const tubeGeos = LINES.map((z) => new TubeGeometry(new CatmullRomCurve3([new Vector3(-W / 2 + 0.05, TOP + 0.2, z), new Vector3(W / 2 - 0.05, TOP + 0.2, z)]), 8, 0.03, 8, false));
-  const edgeGeo = new EdgesGeometry(new BoxGeometry(W, H, D));
-  const edgeMat = new LineBasicMaterial({ color: "#c9a04e", transparent: true, opacity: 0.35, depthWrite: false });
-  const faceMats: ShaderMaterial[] = [];
-  const faceGeos = faceDefs.map(([geo, place, shade, isTop]) => {
-    const tmp = new Mesh(geo); place(tmp);
-    faceMats.push(soilMaterial(SU, tmp, shade, isTop));
-    return { geo, place };
-  });
-  // a block's "core": soil faces, edges, crops and drip lines (the farm's small plots are copies of it)
-  function makeCore() {
-    const g = new Group();
-    faceGeos.forEach(({ geo, place }, i) => { const m = new Mesh(geo, faceMats[i]); place(m); g.add(m); });
-    const edges = new LineSegments(edgeGeo, edgeMat);
-    edges.position.y = TOP - H / 2;
-    const plants = new LineSegments(plantsGeo, plantsMat);
-    plants.frustumCulled = false;
-    g.add(edges, plants, ...tubeGeos.map((t) => new Mesh(t, tubeMat)));
-    return g;
-  }
+  const { W, D, H, TOP, SU, plantsMat, tubeMat, makeCore } = plotKit(rnd);
   block.add(makeCore());
 
   // ---- roots, drawn on the cut face under the front row ----
@@ -749,6 +719,49 @@ export function createSoil({ stage, camera, fonts }: { stage: Group; camera: Per
       stage.clear();
     },
   };
+}
+
+/**
+ * The plot's building blocks, shared by every copy of it: the soil faces (three visible: front cut, right
+ * side, top), the edges, the crops and the drip lines. makeCore() returns one plot; copies share materials,
+ * so they share one moisture state. The home page uses this for its small Agro plot.
+ */
+export function plotKit(rnd: () => number) {
+  const SU = soilUniforms();
+  const { w: W, d: D, h: H, top: TOP } = BLOCK;
+  // the faces: front (the cut), right side, top, back, left
+  const faceDefs: [PlaneGeometry, (m: Mesh) => void, number, boolean][] = [
+    [new PlaneGeometry(W, H, 1, 1), (m) => m.position.set(0, TOP - H / 2, D / 2), 1.0, false],
+    [new PlaneGeometry(D, H, 1, 1), (m) => { m.position.set(W / 2, TOP - H / 2, 0); m.rotation.y = Math.PI / 2; }, 0.7, false],
+    [new PlaneGeometry(W, D, 1, 1), (m) => { m.position.set(0, TOP, 0); m.rotation.x = -Math.PI / 2; }, 1.12, true],
+    // back and left: only seen when a plot is turned around (the home page's small plot)
+    [new PlaneGeometry(W, H, 1, 1), (m) => { m.position.set(0, TOP - H / 2, -D / 2); m.rotation.y = Math.PI; }, 0.8, false],
+    [new PlaneGeometry(D, H, 1, 1), (m) => { m.position.set(-W / 2, TOP - H / 2, 0); m.rotation.y = -Math.PI / 2; }, 0.7, false],
+  ];
+  const plantsGeo = buildPlants(rnd);
+  const plantsMat = plantsMaterial();
+  const tubeMat = tubeMaterial();
+  const tubeGeos = LINES.map((z) => new TubeGeometry(new CatmullRomCurve3([new Vector3(-W / 2 + 0.05, TOP + 0.2, z), new Vector3(W / 2 - 0.05, TOP + 0.2, z)]), 8, 0.03, 8, false));
+  const edgeGeo = new EdgesGeometry(new BoxGeometry(W, H, D));
+  const edgeMat = new LineBasicMaterial({ color: "#c9a04e", transparent: true, opacity: 0.35, depthWrite: false });
+  const faceMats: ShaderMaterial[] = [];
+  const faceGeos = faceDefs.map(([geo, place, shade, isTop]) => {
+    const tmp = new Mesh(geo); place(tmp);
+    faceMats.push(soilMaterial(SU, tmp, shade, isTop));
+    return { geo, place };
+  });
+  // a block's "core": soil faces, edges, crops and drip lines (the farm's small plots are copies of it)
+  function makeCore() {
+    const g = new Group();
+    faceGeos.forEach(({ geo, place }, i) => { const m = new Mesh(geo, faceMats[i]); place(m); g.add(m); });
+    const edges = new LineSegments(edgeGeo, edgeMat);
+    edges.position.y = TOP - H / 2;
+    const plants = new LineSegments(plantsGeo, plantsMat);
+    plants.frustumCulled = false;
+    g.add(edges, plants, ...tubeGeos.map((t) => new Mesh(t, tubeMat)));
+    return g;
+  }
+  return { W, D, H, TOP, SU, plantsMat, tubeMat, makeCore };
 }
 
 // Young crops in rows on top of the block: a stem and a few arching leaves each, drawn as lines.

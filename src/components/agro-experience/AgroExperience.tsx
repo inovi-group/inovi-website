@@ -9,7 +9,7 @@ import { pageTop } from "../firma-experience/listen";
 import { TunePanel } from "../firma-experience/TunePanel";
 import { AGRO_DEFAULTS, AGRO_PARAMS, AGRO_STORE, agroTune } from "./agroTuning";
 import { FEATURES, STATS, STEPS } from "./content";
-import "./agro.css";
+import "../scene/scrollPage.css";
 
 // WebGL only in the browser: the static export ships the page text, the scene mounts on the client.
 const AgroScene = dynamic(() => import("./AgroScene"), { ssr: false });
@@ -75,13 +75,13 @@ export function AgroExperience() {
   const getStep = useCallback(() => stepFn.current(), []);
 
   return (
-    <div className="ag-exp" ref={rootRef}>
-      <div className="ag-scene" aria-hidden="true">
+    <div className="sx ag-exp" ref={rootRef}>
+      <div className="sx-scene" aria-hidden="true">
         {ready && reduceMotion.current && <AgroScene getStep={getStep} reduceMotion={reduceMotion.current} />}
       </div>
       <div className="scrim" aria-hidden="true" />
 
-      <div className="ag-content">
+      <div className="sx-content">
         <section className="section hero" id="top">
           <div className="hero-copy">
             <Stamp tone="agro">AGRO · Smart irrigation</Stamp>

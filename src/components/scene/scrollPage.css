@@ -1,0 +1,152 @@
+/* Scroll pages over a fixed 3D scene (/agro, the home page), in the Firma page's layout. Scoped to .sx; the
+   page sets its accent (--accent, --accent-soft). The scene is always dark, like the Firma page. */
+html:has(.sx) {
+  --color-ink: #0a0d13;
+  --color-surface: #10141c;
+  --color-card: #131924;
+  --color-text: #e7eaf0;
+  --color-muted: #94a0b4;
+  --color-dim: #5c6678;
+  --color-line: #1f2735;
+  --color-agro: #46b876;
+  --color-agro-soft: #10281b;
+  --color-accent: #4593ff;
+  --color-accent-soft: #12233d;
+  --color-isale: #4593ff;
+  --color-isale-soft: #12233d;
+  --color-firma: #d9a34a;
+  --color-firma-soft: #2a2214;
+  background: #0a0d13;
+}
+body:has(.sx) { overflow-x: hidden; }
+body:has(.sx) > footer { position: relative; z-index: 2; background: var(--color-ink); }
+
+.sx {
+  --ink: #0a0d13; --line: #1f2735; --text: #e7eaf0; --muted: #94a0b4; --dim: #5c6678;
+  --accent: #46b876; --accent-soft: #10281b; --gutter: 20px; --header: 64px; --radius: 12px;
+  position: relative; color: var(--text);
+}
+.sx .sx-scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: var(--ink); }
+.sx .scrim {
+  position: fixed; inset: 0; pointer-events: none; z-index: 1;
+  background: linear-gradient(90deg, rgba(10, 13, 19, 0.88) 0%, rgba(10, 13, 19, 0.62) 32%, rgba(10, 13, 19, 0) 50%);
+}
+.sx .sx-content { position: relative; z-index: 2; }
+.sx .section {
+  min-height: 100vh; min-height: 100svh; max-width: 1152px; margin: 0 auto;
+  padding: 96px var(--gutter) 48px; display: flex; align-items: center;
+}
+.sx a:focus-visible, .sx button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* hero: headline on the left, the soil on the right */
+.sx .section.hero { min-height: calc(100vh - var(--header)); min-height: calc(100svh - var(--header)); padding-top: 40px; }
+.sx .hero-copy { max-width: min(560px, 46vw); }
+.sx .hero h1 {
+  margin: 18px 0 0; font-size: clamp(36px, 4.6vw, 58px); line-height: 1.07;
+  letter-spacing: -0.03em; font-weight: 700; text-shadow: 0 2px 24px rgba(10, 13, 19, 0.9); text-wrap: balance;
+}
+.sx .hero h1 em { font-style: normal; color: var(--accent); }
+.sx .hero p.lede { margin: 20px 0 0; max-width: 520px; font-size: 18px; line-height: 1.6; color: #b4bdcc; }
+.sx .values { list-style: none; margin: 28px 0 0; padding: 0; max-width: 540px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sx .values li {
+  padding: 13px 14px 12px; border: 1px solid var(--line); border-top: 2px solid var(--accent); border-radius: 8px;
+  background: rgba(10, 13, 19, 0.72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.sx .values b { display: block; font-family: var(--font-mono); font-size: 17px; font-weight: 700; color: var(--accent); }
+.sx .values span { display: block; margin-top: 3px; font-size: 13px; color: var(--muted); }
+.sx .cta-block { margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; }
+.sx .scroll-cue { margin-top: 22px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+
+/* the story steps */
+.sx .idx { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; color: var(--dim); text-transform: uppercase; }
+.sx .big-step .idx, .sx .features .idx { color: var(--accent); font-size: 12px; }
+.sx .big-step h2 { margin: 16px 0 0; font-size: clamp(38px, 4vw, 60px); line-height: 1.05; letter-spacing: -0.03em; font-weight: 700; text-wrap: balance; }
+.sx .big-step .what { margin: 22px 0 0; font-size: clamp(17px, 1.35vw, 20px); line-height: 1.55; color: #c3cad6; }
+.sx .big-step .why { margin: 20px 0 0; padding-left: 16px; border-left: 2px solid var(--accent); font-size: clamp(15px, 1.1vw, 16.5px); line-height: 1.55; color: var(--muted); }
+.sx .big-step .why b { display: block; margin-bottom: 4px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.sx .section.flow-step { padding-top: 80px; padding-bottom: 40px; }
+.sx .flow-step .big-step {
+  width: clamp(300px, calc(41vw - max(var(--gutter), 50vw - 556px)), 500px);
+  opacity: var(--vis, 1); transform: translateY(calc((1 - var(--vis, 1)) * 30px));
+}
+
+/* a section of cards on its own ground (the scene dims behind it) */
+.sx .section.features { position: relative; min-height: 0; padding-top: 120px; padding-bottom: 40px; }
+.sx .section.features > div { width: 100%; }
+.sx .section.features::before {
+  content: ""; position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(50% - 50vw); right: calc(50% - 50vw);
+  background: linear-gradient(180deg, rgba(10, 13, 19, 0), rgba(10, 13, 19, 0.93) 110px, rgba(10, 13, 19, 0.93) calc(100% - 110px), rgba(10, 13, 19, 0));
+}
+.sx .features h2 { margin: 14px 0 0; font-size: clamp(30px, 3.2vw, 46px); line-height: 1.1; letter-spacing: -0.03em; font-weight: 700; }
+.sx .feat-lede { margin: 14px 0 0; max-width: 620px; font-size: 17px; line-height: 1.6; color: #b4bdcc; }
+.sx .feat-grid { list-style: none; margin: 32px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.sx .feat-grid li { padding: 22px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(12, 16, 23, 0.88); }
+.sx .feat-grid b { display: block; margin-top: 14px; font-size: 16px; font-weight: 600; }
+.sx .feat-grid p { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+
+/* close */
+.sx .section.close { min-height: 80vh; min-height: 80svh; }
+.sx .close .step { max-width: clamp(300px, calc(41vw - max(var(--gutter), 50vw - 556px)), 480px); }
+.sx .close h2 { margin: 12px 0 0; font-size: clamp(28px, 2.8vw, 40px); line-height: 1.2; letter-spacing: -0.03em; font-weight: 700; }
+.sx .close p { margin: 12px 0 0; font-size: 15.5px; line-height: 1.6; color: var(--muted); }
+
+/* phone: the scene keeps the top of the screen, the text owns the bottom */
+@media (max-width: 760px) {
+  .sx { --gutter: 16px; }
+  .sx .scrim { background: linear-gradient(180deg, rgba(10, 13, 19, 0) 30%, rgba(10, 13, 19, 0.88) 52%); }
+  .sx .section { align-items: flex-end; padding-top: 72px; padding-bottom: 28px; }
+  .sx .section.hero { padding-top: 24px; }
+  .sx .hero-copy { max-width: none; }
+  .sx .hero h1 { font-size: 31px; }
+  .sx .hero p.lede { font-size: 15.5px; margin-top: 12px; }
+  .sx .values { gap: 8px; margin-top: 18px; }
+  .sx .values li { padding: 9px 10px; }
+  .sx .values b { font-size: 14px; }
+  .sx .values span { font-size: 12px; }
+  .sx .big-step .idx { font-size: 10.5px; }
+  .sx .big-step h2 { font-size: clamp(24px, 6.9vw, 29px); margin-top: 8px; }
+  .sx .big-step .what { font-size: 14.5px; line-height: 1.48; margin-top: 8px; }
+  .sx .big-step .why { font-size: 13px; line-height: 1.42; margin-top: 9px; padding-left: 12px; }
+  .sx .big-step .why b { font-size: 9.5px; margin-bottom: 2px; }
+  .sx .section.flow-step { padding: 0 12px 14px; }
+  .sx .flow-step .big-step {
+    width: auto; padding: 14px 16px 16px; border: 1px solid var(--line); border-radius: var(--radius);
+    background: rgba(10, 13, 19, 0.9); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transform: none;
+  }
+  .sx .section.features { display: block; padding: 72px 16px 24px; }
+  .sx .feat-grid { grid-template-columns: 1fr; gap: 8px; }
+  .sx .feat-grid li { padding: 16px; }
+  .sx .close .step { max-width: none; padding: 16px; border-radius: var(--radius); background: rgba(10, 13, 19, 0.85); }
+  .sx .close h2 { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) { .sx .flow-step .big-step { transform: none; } }
+
+/* tuning panel (?tune=1): same look as the Firma one, in the page's accent */
+.sx .tune {
+  position: fixed; z-index: 45; top: calc(var(--header) + 10px); right: 12px; width: 320px;
+  max-height: calc(100vh - var(--header) - 24px); overflow: auto;
+  border: 1px solid var(--line); border-radius: 10px; background: rgba(12, 16, 23, 0.94);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+}
+.sx .tune-head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: rgba(12, 16, 23, 0.98); border-bottom: 1px solid var(--line); }
+.sx .tune-head b { color: var(--text); letter-spacing: 0.08em; text-transform: uppercase; }
+.sx .tune button { font: inherit; color: var(--text); background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+.sx .tune button:hover { border-color: var(--accent); }
+.sx .tune-body { padding: 4px 12px 12px; }
+.sx .tune-hint { margin: 8px 0 4px; color: var(--dim); line-height: 1.5; }
+.sx .tune fieldset { border: 0; border-top: 1px solid var(--line); margin: 8px 0 0; padding: 8px 0 0; }
+.sx .tune legend { color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; padding: 0 6px 0 0; }
+.sx .tune-row { display: grid; grid-template-columns: 112px 1fr 50px; align-items: center; gap: 8px; margin-top: 6px; }
+.sx .tune-row span { color: var(--muted); line-height: 1.25; }
+.sx .tune-row input[type="range"] { width: 100%; accent-color: var(--accent); }
+.sx .tune-row input[type="color"] { width: 100%; height: 22px; border: 1px solid var(--line); border-radius: 4px; background: none; padding: 0; }
+.sx .tune-row output { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+.sx .tune-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.sx .tune-actions span { color: var(--accent); }
+.sx .tune textarea { width: 100%; margin-top: 8px; resize: vertical; font: inherit; font-size: 10.5px; color: var(--text); background: #0a0d13; border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+@media (max-width: 760px) { .sx .tune { top: auto; bottom: 10px; left: 10px; right: 10px; width: auto; max-height: 55vh; } }
+
+/* accents */
+.sx.ag-exp { --accent: #46b876; --accent-soft: #10281b; }
+.sx.hm-exp { --accent: #4593ff; --accent-soft: #12233d; }

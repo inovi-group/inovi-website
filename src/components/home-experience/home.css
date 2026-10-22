@@ -1,0 +1,37 @@
+/* Home page extras, on top of the shared scroll-page styles (scene/scrollPage.css) */
+.sx.hm-exp .hero h1 { font-size: clamp(36px, 4.4vw, 56px); }
+.sx.hm-exp .values b { font-size: 16px; color: var(--text); }
+.sx.hm-exp .values li { border-top-color: var(--accent); }
+
+/* product cards, each in its own accent */
+.sx .prod-grid { margin-top: 32px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.sx .prod {
+  --tone: var(--accent);
+  display: flex; flex-direction: column; padding: 22px; border: 1px solid var(--line); border-top: 2px solid var(--tone);
+  border-radius: var(--radius); background: rgba(12, 16, 23, 0.9); text-decoration: none; color: var(--text);
+  transition: border-color 0.2s, transform 0.2s;
+}
+.sx .prod:hover { border-color: var(--tone); transform: translateY(-2px); }
+.sx .prod.tone-isale { --tone: #4593ff; }
+.sx .prod.tone-agro { --tone: #46b876; }
+.sx .prod.tone-firma { --tone: #d9a34a; }
+.sx .prod-tag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tone); }
+.sx .prod b { margin-top: 14px; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.sx .prod p { margin: 8px 0 0; flex: 1; font-size: 14px; line-height: 1.6; color: var(--muted); }
+.sx .prod-cta { margin-top: 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--tone); }
+.sx .energy {
+  margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px;
+  border: 1px dashed var(--line); border-radius: var(--radius); font-size: 13.5px; color: var(--muted); text-decoration: none;
+}
+.sx .energy b { color: var(--text); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; }
+.sx .energy i { margin-left: auto; font-style: normal; display: inline-flex; align-items: center; gap: 5px; color: var(--accent); }
+.sx .energy:hover { border-color: var(--accent); }
+.sx .principles-h { margin-top: 72px !important; font-size: clamp(26px, 2.6vw, 36px) !important; }
+.sx .feat-grid.three { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 900px) { .sx .prod-grid, .sx .feat-grid.three { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .sx .energy i { margin-left: 0; } }
+/* phone hero: keep the text block short so the ring has the top of the screen */
+@media (max-width: 760px) {
+  .sx.hm-exp .values span { display: none; }
+  .sx.hm-exp .hero h1 { font-size: 30px; }
+}
