@@ -39,6 +39,7 @@ import { HERO_DEFAULTS } from "../firma-experience/heroTuning";
 import { drawDeal } from "../isale-experience/pipelineScene";
 import { DepthOfFieldEffect, EffectPass } from "postprocessing";
 import { homeTune as T } from "./homeTuning";
+import { cameraPosition, objectYaws, stepRing, turnOf } from "./ringMotion";
 
 /**
  * The home page's product ring: one 3D scene, three objects on a turntable that physically turns.
@@ -263,11 +264,9 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
 
   function update({ target, t, dt, still, w, h }: { target: number; t: number; dt: number; still: boolean; w: number; h: number }) {
     // the ring turns toward the target (eased); still: it jumps
-    const k = 1 - Math.exp(-dt * 3.2 * T.turnSpeed);
-    rot = still ? target : rot + (target - rot) * k;
-    if (Math.abs(target - rot) < 1e-4) rot = target;
+    rot = still ? target : stepRing(rot, target, dt, T.turnSpeed);
     const R = T.ringRadius, sp = still ? 0 : T.spin;
-    turntable.rotation.y = (-rot * TAU) / 3;
+    turntable.rotation.y = turnOf(rot);
     ring.scale.set(R, 1, R); ring2.scale.set(R + 0.06, 1, R + 0.06);
     (ring.material as LineBasicMaterial).opacity = 0.55 * T.firmaRing;
     (ring2.material as LineBasicMaterial).opacity = 0.25 * T.firmaRing;
@@ -280,32 +279,22 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
     });
 
     // the camera: in front of the ring, a little above, looking at the front object
-    const D = T.cameraDistance;
     camera.aspect = w / h;
-    // phones (tall stage): step back so the two at the back stay in view
-    const fit = w / h < 1 ? 1 + (1 - w / h) * 0.9 : 1;
-    camera.position.set(0, Math.sin(T.elevation) * D * fit + 0.1, R + Math.cos(T.elevation) * D * fit);
+    const cp = cameraPosition({ R, distance: T.cameraDistance, elevation: T.elevation, aspect: w / h });
+    camera.position.set(cp.x, cp.y, cp.z);
     camera.lookAt(0, -0.05, R * 0.55);
     camera.updateProjectionMatrix();
 
+    const yaws = objectYaws({ turn: turntable.rotation.y, R, cam: camera.position, t, spin: sp, envMaxYaw: T.envMaxYaw });
     slots.forEach((s, i) => {
       const a = (i * TAU) / 3;
       s.outer.position.set(Math.sin(a) * R, 0, Math.cos(a) * R);
-      // each object turns only a quarter as far as the turntable, so it keeps mostly facing you as it comes round
-      const orbit = Math.atan2(Math.sin(a + turntable.rotation.y), Math.cos(a + turntable.rotation.y)); // 0 at the front, wrapped to ±π
-      s.outer.rotation.y = 0.25 * orbit - turntable.rotation.y;
+      // its yaw (see ringMotion.ts): a quarter of its way round the ring, easing through 0° across the very back,
+      // a gentle sway, and for the envelope a clamp to within envMaxYaw of facing the camera
+      s.outer.rotation.y = yaws[i].outer;
+      s.inner.rotation.y = yaws[i].inner;
       const front = Math.max(0, Math.cos(a + turntable.rotation.y)); // 1 when this one is at the front
       s.inner.position.y = sp * Math.sin(t * 0.6 + i * 2) * 0.06;
-      s.inner.rotation.y = sp * Math.sin(t * 0.25 + i) * 0.18;
-      if (i === 0) {
-        // the envelope never turns further than envMaxYaw from facing the camera: no back, no thin edge-on profile
-        const wa = a + turntable.rotation.y, wx = Math.sin(wa) * R, wz = Math.cos(wa) * R;
-        const toCam = Math.atan2(camera.position.x - wx, camera.position.z - wz);
-        const yaw = turntable.rotation.y + s.outer.rotation.y + s.inner.rotation.y;
-        const off = Math.atan2(Math.sin(yaw - toCam), Math.cos(yaw - toCam));
-        const max = (Math.max(0, Math.min(80, T.envMaxYaw)) * Math.PI) / 180;
-        s.inner.rotation.y += Math.max(-max, Math.min(max, off)) - off;
-      }
       // the ones at the back are drawn a little smaller than perspective alone makes them (atmosphere mode)
       s.outer.scale.setScalar(T.objectScale * (T.depthMode >= 1 ? 1 : lerp(T.backScale, 1, front)));
       const glow = glows[i];

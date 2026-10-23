@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check:ring": "node scripts/check-ring-motion.mjs"
   },
   "dependencies": {
     "@noble/hashes": "^1.8.0",
