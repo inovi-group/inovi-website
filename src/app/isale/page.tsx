@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 import { Stamp } from "@/components/Stamp";
+import { FirmaLayer } from "@/components/firma/FirmaLayer";
+import { FirmaSeal } from "@/components/firma/FirmaSeal";
 
 export const metadata: Metadata = {
   title: "iSale — Detect Hidden Deal Risks Before Signature",
@@ -84,6 +86,7 @@ export default function ISalePage() {
             >
               Request a demo <ArrowRight size={16} />
             </a>
+            <div><FirmaSeal className="mt-6" /></div>
           </Reveal>
         </div>
       </section>
@@ -144,6 +147,8 @@ export default function ISalePage() {
           </div>
         </div>
       </section>
+
+      <FirmaLayer what="Every risk score iSale puts on a deal, and the signals it was built from, is written to FIRMA." />
 
       <section className="mx-auto max-w-6xl px-5 py-20">
         <Reveal>

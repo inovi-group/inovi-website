@@ -4,6 +4,8 @@ import dynamic from "next/dynamic";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Stamp } from "@/components/Stamp";
+import { FirmaLayer } from "@/components/firma/FirmaLayer";
+import { FirmaSeal } from "@/components/firma/FirmaSeal";
 import { applyOutcome, createStoryData, STEPS, type Outcome, type StoryData } from "./content";
 import { mountFlow } from "./flow";
 import { mountStory } from "./story";
@@ -223,6 +225,7 @@ export function Experience() {
               <li><b>Drift caught early</b><span>Alerts when a score source, model or its data starts to slip.</span></li>
             </ul>
             <Ctas />
+            <FirmaSeal className="mt-5" />
             <div className="scroll-cue">Scroll: how it works</div>
           </div>
         </section>
@@ -246,6 +249,8 @@ export function Experience() {
         )}
 
         <TrustFeatures />
+
+        <FirmaLayer what="Every deal score, forecast, outcome and decision Fides sees is written to FIRMA, and so is every month-end report." />
 
         <section className="section calm close" id="summary" aria-labelledby="h-end">
           <div className="step">

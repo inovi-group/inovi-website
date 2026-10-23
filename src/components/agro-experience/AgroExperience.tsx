@@ -4,6 +4,8 @@ import dynamic from "next/dynamic";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Stamp } from "@/components/Stamp";
+import { FirmaLayer } from "@/components/firma/FirmaLayer";
+import { FirmaSeal } from "@/components/firma/FirmaSeal";
 import { mountFlow } from "../firma-experience/flow";
 import { pageTop } from "../firma-experience/listen";
 import { TunePanel } from "../firma-experience/TunePanel";
@@ -99,6 +101,7 @@ export function AgroExperience() {
                 Partner on a pilot <ArrowRight size={16} />
               </a>
             </div>
+            <FirmaSeal className="mt-5" />
             <div className="scroll-cue">Scroll: under the surface</div>
           </div>
         </section>
@@ -119,6 +122,8 @@ export function AgroExperience() {
             </ul>
           </div>
         </section>
+
+        <FirmaLayer what="Every sensor reading, irrigation decision and dose AGRO makes is written to FIRMA, so water savings can be proven to partners, cooperatives and funders." />
 
         <section className="section close" aria-labelledby="ag-end">
           <div className="step">

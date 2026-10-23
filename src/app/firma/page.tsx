@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
@@ -11,9 +12,9 @@ import { Reveal } from "@/components/Reveal";
 import { Stamp } from "@/components/Stamp";
 
 export const metadata: Metadata = {
-  title: "FIRMA — Open Specification for Cryptographic Audit Trails",
+  title: "FIRMA — The trust layer under every Inovi product",
   description:
-    "FIRMA v2.0: an open specification for tamper-evident records in multi-agent systems. SHA3-512 hash chains, Ed25519 signatures, GPL-3.0.",
+    "FIRMA is the verifiable, tamper-proof record layer behind FIDES, AGRO and iSale, and an open specification (v2.0) for tamper-evident records: SHA3-512 hash chains, Ed25519 signatures, GPL-3.0.",
   alternates: { canonical: "https://inovigroup.co.uk/firma" },
 };
 
@@ -67,6 +68,15 @@ const resources = [
   },
 ];
 
+const securedProducts = [
+  { name: "FIDES", href: "/fides/", tagline: "Trusted deal records", tone: "text-firma",
+    text: "Every deal score, forecast and decision, sealed into a register your auditors can verify, with the month-end report done for you." },
+  { name: "AGRO", href: "/agro/", tagline: "Smart irrigation", tone: "text-agro",
+    text: "Every sensor reading and irrigation decision on record, so water savings can be proven to partners and funders." },
+  { name: "iSale", href: "/isale/", tagline: "Revenue intelligence", tone: "text-isale",
+    text: "Every deal risk score, and the signals it was built from, kept as a verifiable record." },
+];
+
 export default function FirmaPage() {
   return (
     <>
@@ -74,19 +84,20 @@ export default function FirmaPage() {
         <div className="grid-backdrop absolute inset-0" aria-hidden="true" />
         <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:pt-28">
           <Reveal>
-            <Stamp tone="firma">FIRMA — Open specification</Stamp>
+            <Stamp tone="firma">FIRMA — The trust layer</Stamp>
           </Reveal>
           <Reveal delay={0.08}>
             <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight text-text sm:text-5xl">
-              Audit trails that cannot be quietly rewritten.
+              The trust layer under every Inovi product.
             </h1>
           </Reveal>
           <Reveal delay={0.16}>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted">
-              FIRMA is an open specification for tamper-evident records in
-              multi-agent systems. Every record is hashed with SHA3-512, signed
-              with Ed25519, and chained to its predecessor — so integrity is a
-              property you verify, not a claim you trust.
+              FIRMA is the verifiable, tamper-proof record behind FIDES, AGRO and
+              iSale, and an open specification anyone can implement. Every record
+              is hashed with SHA3-512, signed with Ed25519, and chained to its
+              predecessor — so integrity is a property you verify, not a claim you
+              trust.
             </p>
           </Reveal>
           <Reveal delay={0.24}>
@@ -121,6 +132,32 @@ export default function FirmaPage() {
                 <div className="mt-1 font-mono text-lg font-semibold text-firma">{f.value}</div>
                 <div className="text-xs text-muted">{f.detail}</div>
               </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* The products FIRMA secures */}
+      <section className="mx-auto max-w-6xl px-5 pt-20">
+        <Reveal>
+          <h2 className="text-2xl font-bold tracking-tight text-text sm:text-3xl">
+            Secures every Inovi product
+          </h2>
+          <p className="mt-3 max-w-2xl text-muted">
+            Each product writes what it sees and decides to FIRMA, so its records can be checked later by anyone.
+          </p>
+        </Reveal>
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
+          {securedProducts.map((p, i) => (
+            <Reveal key={p.name} delay={i * 0.08}>
+              <Link href={p.href} className="group flex h-full flex-col rounded-card border border-line bg-card p-6 transition-colors hover:border-firma">
+                <span className={`font-mono text-[11px] uppercase tracking-[0.14em] ${p.tone}`}>{p.tagline}</span>
+                <span className="mt-3 text-lg font-bold text-text">{p.name}</span>
+                <span className="mt-2 flex-1 text-sm leading-relaxed text-muted">{p.text}</span>
+                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-firma">
+                  Visit {p.name} <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </Link>
             </Reveal>
           ))}
         </div>
