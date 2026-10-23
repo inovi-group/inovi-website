@@ -14,7 +14,7 @@ export const HOME_DEFAULTS = {
   swaySpeed: 1.0,       // how fast it sways and drifts (1 = one slow sway every ~30 s)
   drift: 0.08,          // how far it drifts from its place (units)
   // at the back, an object rests turned away from the camera, and turns to face it as it comes to the front
-  backAngle: 38,        // degrees (+ = turned toward the ring's centre, − = outward; at most ±60)
+  backAngle: -38,       // degrees (+ = turned toward the ring's centre, − = outward; at most ±60)
   // layout
   ringRadius: 2.6,      // radius of the turntable
   objectScale: 1.0,
