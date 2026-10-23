@@ -1,4 +1,4 @@
-/* Scroll pages over a fixed 3D scene (/agro, the home page), in the Firma page's layout. Scoped to .sx; the
+/* Scroll pages over a fixed 3D scene (/agro, /isale), in the Fides page's layout. Scoped to .sx; the
    page sets its accent (--accent, --accent-soft). The scene is always dark, like the Firma page. */
 html:has(.sx) {
   --color-ink: #0a0d13;
@@ -149,4 +149,3 @@ body:has(.sx) > footer { position: relative; z-index: 2; background: var(--color
 
 /* accents */
 .sx.ag-exp { --accent: #46b876; --accent-soft: #10281b; }
-.sx.hm-exp { --accent: #4593ff; --accent-soft: #12233d; }

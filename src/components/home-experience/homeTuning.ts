@@ -1,71 +1,42 @@
 /**
- * The home scene's look, in one place. HOME_DEFAULTS is what every visitor sees; paste tuned numbers here to
- * bake them in. With ?tune=1 a panel edits a live copy (homeTune), which the scene reads every frame.
+ * The home carousel's look and timing, in one place. HOME_DEFAULTS is what every visitor sees; paste tuned
+ * numbers here to bake them in. With ?tune=1 a panel edits a live copy (homeTune), read every frame.
  */
 export const HOME_DEFAULTS = {
-  // framing
-  heroYaw: 0.55,          // the ring's turn in the hero
-  heroElevation: 0.38,    // how far above the ring the camera looks down from
-  heroZoom: 1.0,
-  heroShiftX: 0.2,        // how far right the hero scene sits, in viewport widths
-  focusZoom: 1.0,         // how close the story comes to each product
-  drift: 1.0,             // gentle idle turning (0 = still)
-  stationScale: 1.0,      // size of the three products
-  // the governance layer: a ring of chain links under the products
-  ringRadius: 3.4,
-  linkGlow: 0.9,          // brightness of the links
-  pulseSpeed: 0.12,       // records travelling around the ring (turns per second)
-  pulseWidth: 0.35,
-  flowParticles: 1.0,     // records falling from each product into the ring
-  // products
-  envelopeGlow: 0.35,     // FIRMA: the gold envelopes' own light
-  cardGlow: 1.0,          // iSale: the deal cards' edges and the scan
-  plotWater: 0.8,         // AGRO: how deep the water reaches in the small plot
-  labelOpacity: 0.85,
-  // light and air
-  beamOpacity: 0.3,
-  beamWidth: 1.0,
-  beamColor: "#4a7fd6",
-  motesCount: 240,
-  motesBrightness: 1.1,
-  plinthGrid: 0.6,
+  interval: 7,          // seconds each product stays in front before the next one comes forward (0 = no autoplay)
+  transition: 1.4,      // seconds a rotation takes
+  frontWidth: 0.66,     // the front product's width, as a share of the stage
+  spread: 0.5,          // how far left and right the two at the back sit, as a share of the stage width
+  depth: 560,           // how far back they sit (px)
+  backScale: 0.62,      // their size, relative to the front one
+  turn: 22,             // how far they turn toward the centre (degrees)
+  blur: 4,              // their blur (px)
+  dim: 0.72,            // their brightness (1 = as bright as the front one)
+  backOpacity: 1, 
+  backFps: 15,          // frame rate of the products at the back (they are blurred: this saves the GPU)
 };
 export type HomeTune = typeof HOME_DEFAULTS;
 export type HomeKey = keyof HomeTune;
 
 export const HOME_PARAMS: { group: string; items: { key: HomeKey; label: string; min?: number; max?: number; step?: number }[] }[] = [
-  { group: "Framing", items: [
-    { key: "heroYaw", label: "Hero turn", min: -1.5, max: 1.5, step: 0.01 },
-    { key: "heroElevation", label: "Hero elevation", min: 0, max: 1.2, step: 0.01 },
-    { key: "heroZoom", label: "Hero zoom", min: 0.6, max: 1.6, step: 0.01 },
-    { key: "heroShiftX", label: "Hero shift right", min: 0, max: 0.35, step: 0.005 },
-    { key: "focusZoom", label: "Product zoom", min: 0.6, max: 1.6, step: 0.01 },
-    { key: "drift", label: "Idle turning", min: 0, max: 3, step: 0.05 },
-    { key: "stationScale", label: "Product size", min: 0.6, max: 1.5, step: 0.01 },
+  { group: "Rotation", items: [
+    { key: "interval", label: "Interval (s, 0 = off)", min: 0, max: 20, step: 0.5 },
+    { key: "transition", label: "Transition (s)", min: 0.3, max: 4, step: 0.05 },
   ] },
-  { group: "Governance ring", items: [
-    { key: "ringRadius", label: "Radius", min: 2.4, max: 4.5, step: 0.01 },
-    { key: "linkGlow", label: "Link glow", min: 0, max: 2, step: 0.01 },
-    { key: "pulseSpeed", label: "Record speed", min: 0, max: 0.5, step: 0.005 },
-    { key: "pulseWidth", label: "Record width", min: 0.05, max: 1, step: 0.01 },
-    { key: "flowParticles", label: "Records falling in", min: 0, max: 2, step: 0.01 },
+  { group: "Layout", items: [
+    { key: "frontWidth", label: "Front width", min: 0.4, max: 0.95, step: 0.01 },
+    { key: "spread", label: "Back spread", min: 0, max: 0.6, step: 0.01 },
+    { key: "depth", label: "Depth (px)", min: 0, max: 1500, step: 10 },
+    { key: "backScale", label: "Back size", min: 0.3, max: 1, step: 0.01 },
+    { key: "turn", label: "Back turn (°)", min: 0, max: 60, step: 1 },
   ] },
-  { group: "Products", items: [
-    { key: "envelopeGlow", label: "FIRMA envelope glow", min: 0, max: 1.5, step: 0.01 },
-    { key: "cardGlow", label: "iSale card glow", min: 0, max: 2, step: 0.01 },
-    { key: "plotWater", label: "AGRO water depth", min: 0, max: 1.3, step: 0.01 },
-    { key: "labelOpacity", label: "Labels", min: 0, max: 1, step: 0.01 },
-  ] },
-  { group: "Light & air", items: [
-    { key: "beamOpacity", label: "Light column", min: 0, max: 1, step: 0.01 },
-    { key: "beamWidth", label: "Light width", min: 0.3, max: 2.5, step: 0.01 },
-    { key: "beamColor", label: "Light colour" },
-    { key: "motesCount", label: "Motes", min: 0, max: 600, step: 10 },
-    { key: "motesBrightness", label: "Mote brightness", min: 0, max: 3, step: 0.05 },
-    { key: "plinthGrid", label: "Floor grid", min: 0, max: 1.5, step: 0.01 },
+  { group: "Focus", items: [
+    { key: "blur", label: "Back blur (px)", min: 0, max: 20, step: 0.5 },
+    { key: "dim", label: "Back brightness", min: 0.05, max: 1, step: 0.01 },
+    { key: "backOpacity", label: "Back opacity", min: 0.1, max: 1, step: 0.01 },
+    { key: "backFps", label: "Back frame rate", min: 2, max: 60, step: 1 },
   ] },
 ];
-export const HOME_LIMITS = { motes: 600 };
 
 export const homeTune: HomeTune = { ...HOME_DEFAULTS };
-export const HOME_STORE = "home-scene-tune";
+export const HOME_STORE = "home-carousel-tune";

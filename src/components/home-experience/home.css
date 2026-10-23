@@ -1,37 +1,128 @@
-/* Home page extras, on top of the shared scroll-page styles (scene/scrollPage.css) */
-.sx.hm-exp .hero h1 { font-size: clamp(36px, 4.4vw, 56px); }
-.sx.hm-exp .values b { font-size: 16px; color: var(--text); }
-.sx.hm-exp .values li { border-top-color: var(--accent); }
+/* Home page (/): the product carousel and the sections under it. The scenes are dark, so the page keeps the
+   dark palette whatever the theme toggle says (like the product pages). */
+html:has(.hm-page) {
+  --color-ink: #0a0d13; --color-surface: #10141c; --color-card: #131924; --color-text: #e7eaf0;
+  --color-muted: #94a0b4; --color-dim: #5c6678; --color-line: #1f2735;
+  --color-accent: #4593ff; --color-accent-soft: #12233d; --color-isale: #4593ff; --color-agro: #46b876; --color-firma: #d9a34a;
+  background: #0a0d13;
+}
+.hm-page {
+  --ink: #0a0d13; --line: #1f2735; --text: #e7eaf0; --muted: #94a0b4; --dim: #5c6678; --accent: #4593ff; --radius: 12px;
+  color: var(--text); overflow-x: hidden;
+}
+.hm-page a:focus-visible, .hm-page button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-/* product cards, each in its own accent */
-.sx .prod-grid { margin-top: 32px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-.sx .prod {
-  --tone: var(--accent);
-  display: flex; flex-direction: column; padding: 22px; border: 1px solid var(--line); border-top: 2px solid var(--tone);
-  border-radius: var(--radius); background: rgba(12, 16, 23, 0.9); text-decoration: none; color: var(--text);
-  transition: border-color 0.2s, transform 0.2s;
+/* hero: the copy on the left, the carousel on the right */
+.hm-hero {
+  max-width: 1152px; margin: 0 auto; padding: 40px 20px 40px; min-height: calc(100svh - 64px);
+  display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 16px; align-items: center;
 }
-.sx .prod:hover { border-color: var(--tone); transform: translateY(-2px); }
-.sx .prod.tone-isale { --tone: #4593ff; }
-.sx .prod.tone-agro { --tone: #46b876; }
-.sx .prod.tone-fides { --tone: #d9a34a; }
-.sx .prod-tag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tone); }
-.sx .prod b { margin-top: 14px; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-.sx .prod p { margin: 8px 0 0; flex: 1; font-size: 14px; line-height: 1.6; color: var(--muted); }
-.sx .prod-cta { margin-top: 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--tone); }
-.sx .energy {
-  margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px;
-  border: 1px dashed var(--line); border-radius: var(--radius); font-size: 13.5px; color: var(--muted); text-decoration: none;
+/* the copy stays above the carousel: a card turning past goes behind it */
+.hm-copy { position: relative; z-index: 20; max-width: 480px; }
+.hm-copy h1 { margin: 18px 0 0; font-size: clamp(34px, 4vw, 54px); line-height: 1.07; letter-spacing: -0.03em; font-weight: 700; text-wrap: balance; }
+.hm-copy h1 em { font-style: normal; color: var(--accent); }
+.hm-copy .lede { margin: 18px 0 0; font-size: 17px; line-height: 1.6; color: #b4bdcc; }
+.hm-page .cta-block { margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* the carousel */
+/* the carousel runs on to the right edge of the window */
+.carousel { position: relative; margin-right: calc(-1 * max(0px, (100vw - 1152px) / 2)); }
+.carousel-stage { position: relative; height: clamp(300px, 40vw, 600px); perspective: 1600px; perspective-origin: 50% 45%; }
+.carousel-card {
+  position: absolute; left: 50%; top: 50%; aspect-ratio: 16 / 10; width: 70%;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 16px; overflow: hidden;
+  background: #0a0d13; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55); cursor: pointer; transform-style: preserve-3d;
+  will-change: transform, filter;
 }
-.sx .energy b { color: var(--text); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; }
-.sx .energy i { margin-left: auto; font-style: normal; display: inline-flex; align-items: center; gap: 5px; color: var(--accent); }
-.sx .energy:hover { border-color: var(--accent); }
-.sx .principles-h { margin-top: 72px !important; font-size: clamp(26px, 2.6vw, 36px) !important; }
-.sx .feat-grid.three { grid-template-columns: repeat(3, 1fr); }
-@media (max-width: 900px) { .sx .prod-grid, .sx .feat-grid.three { grid-template-columns: 1fr; } }
-@media (max-width: 760px) { .sx .energy i { margin-left: 0; } }
-/* phone hero: keep the text block short so the ring has the top of the screen */
-@media (max-width: 760px) {
-  .sx.hm-exp .values span { display: none; }
-  .sx.hm-exp .hero h1 { font-size: 30px; }
+.carousel-card.is-front { border-color: color-mix(in srgb, var(--accent) 70%, transparent); box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6), 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent); }
+.carousel-canvas { position: absolute; inset: 0; }
+.carousel-caption {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 20px 16px;
+  background: linear-gradient(180deg, transparent, rgba(10, 13, 19, 0.92) 55%);
+  display: grid; gap: 4px; transition: opacity 0.4s;
+}
+.carousel-card:not(.is-front) .carousel-caption { opacity: 0.5; }
+.carousel-tag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); }
+.carousel-tag i { width: 7px; height: 7px; background: var(--accent); }
+.carousel-caption p { margin: 0; max-width: 520px; font-size: 14px; line-height: 1.5; color: #b4bdcc; }
+.carousel-caption a { justify-self: start; margin-top: 4px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--accent); }
+.carousel-card:not(.is-front) .carousel-caption a { visibility: hidden; }
+.carousel-tabs { margin: 16px auto 0; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.carousel-tabs button {
+  position: relative; overflow: hidden; min-width: 150px; padding: 9px 14px 11px; text-align: left; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 10px; background: rgba(16, 20, 28, 0.85); color: var(--muted); font: inherit;
+}
+.carousel-tabs button[aria-selected="true"] { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); color: var(--text); }
+.carousel-tabs b { display: block; font-size: 13px; letter-spacing: 0.04em; }
+.carousel-tabs b::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 7px; vertical-align: 2px; background: var(--accent); }
+.carousel-tabs span { display: block; margin-top: 2px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+.carousel-timer { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--accent); transform-origin: left; animation: carousel-timer linear forwards; }
+@keyframes carousel-timer { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* proofs, products, principles, call to action */
+.hm-proofs { border-block: 1px solid var(--line); background: #10141c; }
+.hm-proofs ul { list-style: none; margin: 0 auto; max-width: 1152px; padding: 26px 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.hm-proofs span { display: block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+.hm-proofs b { display: block; margin-top: 4px; font-family: var(--font-mono); font-size: 18px; }
+.hm-proofs i { display: block; font-style: normal; font-size: 12px; color: var(--muted); }
+.hm-band { max-width: 1152px; margin: 0 auto; padding: 88px 20px 24px; }
+.hm-band .idx { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.hm-band h2 { margin: 12px 0 0; font-size: clamp(28px, 3vw, 42px); line-height: 1.1; letter-spacing: -0.03em; font-weight: 700; }
+.band-lede { margin: 14px 0 0; max-width: 640px; font-size: 16.5px; line-height: 1.6; color: var(--muted); }
+.prod-grid { margin-top: 32px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.prod {
+  --tone: var(--accent); display: flex; flex-direction: column; padding: 22px; border: 1px solid var(--line);
+  border-top: 2px solid var(--tone); border-radius: var(--radius); background: #131924; color: var(--text); transition: border-color 0.2s, transform 0.2s;
+}
+.prod:hover { border-color: var(--tone); transform: translateY(-2px); }
+.prod.tone-isale { --tone: #4593ff; } .prod.tone-agro { --tone: #46b876; } .prod.tone-fides { --tone: #d9a34a; }
+.prod-tag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tone); }
+.prod b { margin-top: 14px; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.prod p { margin: 8px 0 0; flex: 1; font-size: 14px; line-height: 1.6; color: var(--muted); }
+.prod-cta { margin-top: 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--tone); }
+.energy { margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; border: 1px dashed var(--line); border-radius: var(--radius); font-size: 13.5px; color: var(--muted); }
+.energy b { color: var(--text); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; }
+.energy i { margin-left: auto; font-style: normal; display: inline-flex; align-items: center; gap: 5px; color: var(--accent); }
+.energy:hover { border-color: var(--accent); }
+.principles { list-style: none; margin: 28px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.principles li { padding: 22px; border: 1px solid var(--line); border-radius: var(--radius); background: #131924; }
+.principles b { display: block; margin-top: 14px; font-size: 16px; font-weight: 600; }
+.principles p { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+.hm-cta { padding-bottom: 96px; text-align: center; }
+.hm-cta p { margin: 12px auto 0; max-width: 560px; color: var(--muted); }
+.hm-cta .cta-block { justify-content: center; }
+
+/* tuning panel (?tune=1), as on the product pages */
+.hm-page .tune {
+  position: fixed; z-index: 45; top: 74px; right: 12px; width: 320px; max-height: calc(100vh - 88px); overflow: auto;
+  border: 1px solid var(--line); border-radius: 10px; background: rgba(12, 16, 23, 0.94); backdrop-filter: blur(8px);
+  font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+}
+.hm-page .tune-head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: rgba(12, 16, 23, 0.98); border-bottom: 1px solid var(--line); }
+.hm-page .tune-head b { color: var(--text); letter-spacing: 0.08em; text-transform: uppercase; }
+.hm-page .tune button { font: inherit; color: var(--text); background: #12233d; border: 1px solid rgba(69, 147, 255, 0.4); border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+.hm-page .tune-body { padding: 4px 12px 12px; }
+.hm-page .tune-hint { margin: 8px 0 4px; color: var(--dim); line-height: 1.5; }
+.hm-page .tune fieldset { border: 0; border-top: 1px solid var(--line); margin: 8px 0 0; padding: 8px 0 0; }
+.hm-page .tune legend { color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; padding: 0 6px 0 0; }
+.hm-page .tune-row { display: grid; grid-template-columns: 112px 1fr 50px; align-items: center; gap: 8px; margin-top: 6px; }
+.hm-page .tune-row input[type="range"] { width: 100%; accent-color: var(--accent); }
+.hm-page .tune-row output { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+.hm-page .tune-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.hm-page .tune-actions span { color: var(--accent); }
+.hm-page .tune textarea { width: 100%; margin-top: 8px; resize: vertical; font: inherit; font-size: 10.5px; color: var(--text); background: #0a0d13; border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+
+@media (max-width: 960px) {
+  .hm-hero { grid-template-columns: 1fr; min-height: 0; padding-top: 28px; }
+  .hm-copy { max-width: none; }
+  .carousel { margin-right: 0; }
+  .carousel-stage { height: clamp(260px, 62vw, 460px); }
+  .prod-grid, .principles { grid-template-columns: 1fr; }
+  .hm-proofs ul { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .carousel-caption p { display: none; }
+  .carousel-tabs button { min-width: 0; flex: 1; padding: 8px 10px 10px; }
+  .carousel-tabs span { display: none; }
+  .hm-page .tune { top: auto; bottom: 10px; left: 10px; right: 10px; width: auto; max-height: 55vh; }
 }
