@@ -8,7 +8,7 @@ import { FirmaLayer } from "@/components/firma/FirmaLayer";
 import { TunePanel } from "../firma-experience/TunePanel";
 import { HOME_DEFAULTS, HOME_PARAMS, HOME_STORE, homeTune } from "./homeTuning";
 import { ENERGY, PRINCIPLES, PRODUCTS, PROOFS, type Product } from "./content";
-import { ProductCarousel } from "./ProductCarousel";
+import { ProductRing } from "./ProductRing";
 import "./home.css";
 
 const DEMO = "https://inovi-group.github.io/firma-spec/demo/";
@@ -25,9 +25,9 @@ function ProductCard({ p }: { p: Product }) {
 }
 
 /**
- * The home page: the three products (FIDES, AGRO, iSale) on a 3D carousel, each its own page's scene, then the
+ * The home page: the three products (FIDES, AGRO, iSale) as 3D objects on a turntable, then the
  * proofs, the products, FIRMA (the trust layer under all three), why it matters, and a call to action.
- * ?tune=1 opens the carousel's tuning panel.
+ * ?tune=1 opens the ring's tuning panel.
  */
 export function HomeExperience() {
   const [tune, setTune] = useState(false);
@@ -54,7 +54,7 @@ export function HomeExperience() {
             </a>
           </div>
         </div>
-        <ProductCarousel />
+        <ProductRing />
       </section>
 
       <section className="hm-proofs" aria-label="Proof points">
@@ -101,7 +101,7 @@ export function HomeExperience() {
 
       {tune && (
         <TunePanel defaults={HOME_DEFAULTS} params={HOME_PARAMS} live={homeTune} store={HOME_STORE}
-          title="Home carousel tuning" hint="Changes apply live and are kept in this browser." />
+          title="Home ring tuning" hint="Changes apply live and are kept in this browser." />
       )}
     </div>
   );

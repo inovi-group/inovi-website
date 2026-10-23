@@ -343,7 +343,7 @@ function drawPhone(cv: HTMLCanvasElement, F: Fonts) {
   });
 }
 
-type View = { w: number; h: number; aspect: number; wide: boolean; inset?: boolean };
+type View = { w: number; h: number; aspect: number; wide: boolean };
 
 export function createSoil({ stage, camera, fonts }: { stage: Group; camera: PerspectiveCamera; fonts: Fonts }) {
   let seed = 9173;
@@ -687,16 +687,16 @@ export function createSoil({ stage, camera, fonts }: { stage: Group; camera: Per
   }
 
   function placeCamera(elev: number, zoom: number, lookY: number, shift: number) {
-    const { w, h, aspect, wide, inset } = view;
-    // the block (with its ruler, crops and mast) fits in about 8 × 5.6 units; as a card (inset) it is centred
+    const { w, h, aspect, wide } = view;
+    // the block (with its ruler, crops and mast) fits in about 8 × 5.6 units
     const hw = 4.3, hh = 2.9;
     let dist, ox, oy;
     if (wide) {
-      dist = Math.max(hh / (fov * 0.86), hw / (fov * aspect * (inset ? 0.9 : 0.56))) / zoom;
-      ox = inset ? 0 : -w * shift; oy = 0;
+      dist = Math.max(hh / (fov * 0.86), hw / (fov * aspect * 0.56)) / zoom;
+      ox = -w * shift; oy = 0;
     } else {
       dist = Math.max(hh / (fov * 0.5), hw / (fov * aspect * 0.98)) / zoom;
-      ox = 0; oy = inset ? 0 : h * 0.16;
+      ox = 0; oy = h * 0.16;
     }
     camera.aspect = aspect;
     camera.setViewOffset(w, h, ox, oy, w, h);

@@ -4,7 +4,6 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { Group, type PerspectiveCamera } from "three";
 import { createCheck } from "./checkScene";
-import { CardPacer, cardDpr, type CardMode } from "../scene/CardPacer";
 import type { StoryData } from "./content";
 
 export type SceneApi = ReturnType<typeof createCheck>;
@@ -17,8 +16,6 @@ type Props = {
   reduceMotion: MediaQueryList;
   apiRef: MutableRefObject<SceneApi | null>;
   setBackdrop: (bg: number) => void;
-  // shown as a card (the home carousel): sized by its canvas, no mouse tilt, paced when at the back
-  card?: CardMode;
 };
 
 // next/font gives the families hashed names; the canvas textures need the real ones
@@ -37,9 +34,8 @@ function siteFonts() {
  * and driven every frame by the scroll step. The canvas takes no input: it only tilts a few degrees
  * toward the mouse (eased, back to rest when the mouse leaves) or sways slightly with scroll on touch.
  */
-function Check({ getStep, data, layout, treatment, reduceMotion, apiRef, setBackdrop, card }: Props) {
+function Check({ getStep, data, layout, treatment, reduceMotion, apiRef, setBackdrop }: Props) {
   const { camera, gl } = useThree();
-  const size = useThree((st) => st.size);
   const tilt = useRef<Group>(null);
   const api = useRef<SceneApi | null>(null);
   const clock = useRef({ step: 0, last: 0, t: 0 });
@@ -106,14 +102,11 @@ function Check({ getStep, data, layout, treatment, reduceMotion, apiRef, setBack
     } else {
       p.x = Math.sin(c.step * 1.3) * 0.5; p.y = 0;
     }
-    tilt.current.rotation.y = card ? 0 : p.x * 0.07;
-    tilt.current.rotation.x = card ? 0 : p.y * 0.045;
+    tilt.current.rotation.y = p.x * 0.07;
+    tilt.current.rotation.x = p.y * 0.045;
 
-    if (card) check.setView({ w: size.width, h: size.height, aspect: size.width / size.height, wide: size.width / size.height > 0.9 });
-    else {
-      const w = window.innerWidth, h = window.innerHeight;
-      check.setView({ w, h, aspect: w / h, wide: w > 760 && w / h > 0.9 });
-    }
+    const w = window.innerWidth, h = window.innerHeight;
+    check.setView({ w, h, aspect: w / h, wide: w > 760 && w / h > 0.9 });
     check.update({ step: c.step, t: c.t, dt, still });
   });
 
@@ -121,14 +114,10 @@ function Check({ getStep, data, layout, treatment, reduceMotion, apiRef, setBack
 }
 
 export default function ExperienceScene(props: Props) {
-  const { card } = props;
-  const dpr = card ? cardDpr(card) : Math.min(window.devicePixelRatio || 1, window.innerWidth < 760 ? 1.75 : 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, window.innerWidth < 760 ? 1.75 : 2);
   return (
     <Canvas
       dpr={dpr}
-      frameloop={card && !card.active ? "demand" : "always"}
-      // a card is scaled by CSS: measure its layout size, not its on-screen (transformed) size
-      resize={card ? { offsetSize: true } : undefined}
       flat
       gl={{ antialias: true, powerPreference: "high-performance" }}
       camera={{ fov: 35, near: 0.1, far: 200, position: [0, 0, 10] }}
@@ -137,7 +126,6 @@ export default function ExperienceScene(props: Props) {
       aria-hidden="true"
     >
       <Check {...props} />
-      {card && !card.active && <CardPacer fps={card.backFps ?? 15} />}
     </Canvas>
   );
 }

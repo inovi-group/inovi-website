@@ -47,7 +47,7 @@ const GATE_X = X0 + 1.5 * LANE_W; // between qualified and proposal: where iSale
 const ROWS = [-0.75, 0, 0.75];
 
 type Fonts = { sans: string; mono: string };
-type View = { w: number; h: number; aspect: number; wide: boolean; inset?: boolean };
+type View = { w: number; h: number; aspect: number; wide: boolean };
 const canvasOf = (w: number, h: number) => Object.assign(document.createElement("canvas"), { width: w, height: h });
 function rr(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
@@ -58,7 +58,7 @@ function rr(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: num
 type Deal = { name: string; stage: string; risk: number; note: string };
 const NOTES = { low: "ON TRACK", mid: "DISCOUNT PRESSURE", high: "STALLING · NO CHAMPION" };
 const riskColor = (r: number) => (r > 0.7 ? "#ef5a4c" : r > 0.4 ? "#e0a03c" : "#46b876");
-function drawDeal(cv: HTMLCanvasElement, d: Deal, scored: boolean, F: Fonts) {
+export function drawDeal(cv: HTMLCanvasElement, d: Deal, scored: boolean, F: Fonts) {
   const c = cv.getContext("2d")!, W = cv.width, H = cv.height;
   c.clearRect(0, 0, W, H);
   rr(c, 6, 6, W - 12, H - 12, 22);
@@ -259,17 +259,16 @@ export function createPipeline({ stage, camera, fonts }: { stage: Group; camera:
   }
 
   function placeCamera(elev: number, zoom: number, lx: number, ly: number, shift: number) {
-    const { w, h, aspect, wide, inset } = view;
+    const { w, h, aspect, wide } = view;
     // the whole pipeline is about 14 × 4 units
     const hw = 7.4, hh = 2.6;
     let dist, ox, oy;
     if (wide) {
-      const share = inset ? 0.96 : 0.58;
-      dist = Math.max(hh / (fov * 0.86), hw / (fov * aspect * share)) / zoom;
-      ox = inset ? 0 : -w * shift; oy = 0;
+      dist = Math.max(hh / (fov * 0.86), hw / (fov * aspect * 0.58)) / zoom;
+      ox = -w * shift; oy = 0;
     } else {
       dist = Math.max(hh / (fov * 0.5), hw / (fov * aspect * 0.98)) / zoom;
-      ox = 0; oy = inset ? 0 : h * 0.16;
+      ox = 0; oy = h * 0.16;
     }
     camera.aspect = aspect;
     camera.setViewOffset(w, h, ox, oy, w, h);

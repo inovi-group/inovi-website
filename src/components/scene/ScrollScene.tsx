@@ -3,10 +3,8 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { Group, type PerspectiveCamera } from "three";
-import { CardPacer, cardDpr, type CardMode } from "./CardPacer";
 type Fonts = { sans: string; mono: string };
-// inset: the canvas is a card on the page (the home carousel), not the whole page behind the text
-type View = { w: number; h: number; aspect: number; wide: boolean; inset?: boolean };
+type View = { w: number; h: number; aspect: number; wide: boolean };
 // what a scroll-driven scene module provides (the Agro soil, the iSale pipeline)
 export type SceneApi = {
   update(f: { s: number; t: number; still: boolean }): void;
@@ -15,10 +13,10 @@ export type SceneApi = {
   dispose(): void;
 };
 export type CreateScene = (o: { stage: Group; camera: PerspectiveCamera; fonts: Fonts }) => SceneApi;
-type Props = { getStep: () => number; reduceMotion: MediaQueryList; create: CreateScene; card?: CardMode };
+type Props = { getStep: () => number; reduceMotion: MediaQueryList; create: CreateScene };
 
 // next/font gives the families hashed names; the canvas textures need the real ones
-function siteFonts() {
+export function siteFonts() {
   const css = getComputedStyle(document.documentElement);
   const sans = css.getPropertyValue("--font-inter").trim();
   const mono = css.getPropertyValue("--font-jbmono").trim();
@@ -29,14 +27,12 @@ function siteFonts() {
 }
 
 /**
- * A 3D scene behind a scrolling page, driven every frame by the scroll step (the Agro soil, the iSale pipeline),
- * or shown as a card (the home carousel): sized by its canvas, framed in the middle, no mouse tilt.
+ * A 3D scene behind a scrolling page, driven every frame by the scroll step (the Agro soil, the iSale pipeline).
  * Like the Firma scene, the canvas takes no input: it only tilts a few degrees toward the mouse (eased, back
  * to rest when the mouse leaves).
  */
-function Scene({ getStep, reduceMotion, create, card }: Props) {
+function Scene({ getStep, reduceMotion, create }: Props) {
   const { camera } = useThree();
-  const size = useThree((st) => st.size);
   const tilt = useRef<Group>(null);
   const api = useRef<SceneApi | null>(null);
   const clock = useRef({ step: 0, last: 0, t: 0 });
@@ -89,13 +85,10 @@ function Scene({ getStep, reduceMotion, create, card }: Props) {
       p.x += (p.tx - p.x) * k;
       p.y += (p.ty - p.y) * k;
     }
-    tilt.current.rotation.y = card ? 0 : p.x * 0.06;
-    tilt.current.rotation.x = card ? 0 : p.y * 0.035;
-    if (card) scene.setView({ w: size.width, h: size.height, aspect: size.width / size.height, wide: size.width / size.height > 0.9, inset: true });
-    else {
-      const w = window.innerWidth, h = window.innerHeight;
-      scene.setView({ w, h, aspect: w / h, wide: w > 760 && w / h > 0.9 });
-    }
+    tilt.current.rotation.y = p.x * 0.06;
+    tilt.current.rotation.x = p.y * 0.035;
+    const w = window.innerWidth, h = window.innerHeight;
+    scene.setView({ w, h, aspect: w / h, wide: w > 760 && w / h > 0.9 });
     scene.update({ s: c.step, t: c.t, still });
   });
 
@@ -103,14 +96,10 @@ function Scene({ getStep, reduceMotion, create, card }: Props) {
 }
 
 export function ScrollScene(props: Props) {
-  const { card } = props;
-  const dpr = card ? cardDpr(card) : Math.min(window.devicePixelRatio || 1, window.innerWidth < 760 ? 1.75 : 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, window.innerWidth < 760 ? 1.75 : 2);
   return (
     <Canvas
       dpr={dpr}
-      frameloop={card && !card.active ? "demand" : "always"}
-      // a card is scaled by CSS: measure its layout size, not its on-screen (transformed) size
-      resize={card ? { offsetSize: true } : undefined}
       flat
       gl={{ antialias: true, powerPreference: "high-performance" }}
       camera={{ fov: 35, near: 0.1, far: 200, position: [0, 0, 12] }}
@@ -119,7 +108,6 @@ export function ScrollScene(props: Props) {
       aria-hidden="true"
     >
       <Scene {...props} />
-      {card && !card.active && <CardPacer fps={card.backFps ?? 15} />}
     </Canvas>
   );
 }

@@ -17,36 +17,34 @@ html:has(.hm-page) {
   max-width: 1152px; margin: 0 auto; padding: 40px 20px 40px; min-height: calc(100svh - 64px);
   display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 16px; align-items: center;
 }
-/* the copy stays above the carousel: a card turning past goes behind it */
 .hm-copy { position: relative; z-index: 20; max-width: 480px; }
 .hm-copy h1 { margin: 18px 0 0; font-size: clamp(34px, 4vw, 54px); line-height: 1.07; letter-spacing: -0.03em; font-weight: 700; text-wrap: balance; }
 .hm-copy h1 em { font-style: normal; color: var(--accent); }
 .hm-copy .lede { margin: 18px 0 0; font-size: 17px; line-height: 1.6; color: #b4bdcc; }
 .hm-page .cta-block { margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; }
 
-/* the carousel */
-/* the carousel runs on to the right edge of the window */
-.carousel { position: relative; margin-right: calc(-1 * max(0px, (100vw - 1152px) / 2)); }
-.carousel-stage { position: relative; height: clamp(300px, 40vw, 600px); perspective: 1600px; perspective-origin: 50% 45%; }
-.carousel-card {
-  position: absolute; left: 50%; top: 50%; aspect-ratio: 16 / 10; width: 70%;
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 16px; overflow: hidden;
-  background: #0a0d13; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55); cursor: pointer; transform-style: preserve-3d;
-  will-change: transform, filter;
+/* the product ring: one canvas, the labels laid over it under each object */
+.prod-ring { position: relative; margin-right: calc(-1 * max(0px, (100vw - 1152px) / 2)); }
+.prod-ring-stage {
+  position: relative; height: clamp(340px, 44vw, 640px);
+  /* the light column fades in from above rather than starting at the canvas edge */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 14%); mask-image: linear-gradient(180deg, transparent, #000 14%);
 }
-.carousel-card.is-front { border-color: color-mix(in srgb, var(--accent) 70%, transparent); box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6), 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent); }
-.carousel-canvas { position: absolute; inset: 0; }
-.carousel-caption {
-  position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 20px 16px;
-  background: linear-gradient(180deg, transparent, rgba(10, 13, 19, 0.92) 55%);
-  display: grid; gap: 4px; transition: opacity 0.4s;
+.prod-ring-stage canvas { display: block; }
+.prod-ring-label {
+  position: absolute; left: 0; top: 0; display: grid; justify-items: center; gap: 6px; pointer-events: none;
+  transition: opacity 0.3s; will-change: transform;
 }
-.carousel-card:not(.is-front) .carousel-caption { opacity: 0.5; }
-.carousel-tag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); }
-.carousel-tag i { width: 7px; height: 7px; background: var(--accent); }
-.carousel-caption p { margin: 0; max-width: 520px; font-size: 14px; line-height: 1.5; color: #b4bdcc; }
-.carousel-caption a { justify-self: start; margin-top: 4px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--accent); }
-.carousel-card:not(.is-front) .carousel-caption a { visibility: hidden; }
+.prod-ring-label button {
+  pointer-events: auto; display: grid; justify-items: center; gap: 2px; padding: 6px 12px; cursor: pointer; font: inherit;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); border-radius: 999px; background: rgba(10, 13, 19, 0.75);
+  backdrop-filter: blur(6px); color: var(--text);
+}
+.prod-ring-label.is-front button { border-color: color-mix(in srgb, var(--accent) 75%, transparent); }
+.prod-ring-label b { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; letter-spacing: 0.06em; }
+.prod-ring-label b i { width: 7px; height: 7px; background: var(--accent); }
+.prod-ring-label span { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+.prod-ring-label a { pointer-events: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--accent); }
 .carousel-tabs { margin: 16px auto 0; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .carousel-tabs button {
   position: relative; overflow: hidden; min-width: 150px; padding: 9px 14px 11px; text-align: left; cursor: pointer;
@@ -115,13 +113,12 @@ html:has(.hm-page) {
 @media (max-width: 960px) {
   .hm-hero { grid-template-columns: 1fr; min-height: 0; padding-top: 28px; }
   .hm-copy { max-width: none; }
-  .carousel { margin-right: 0; }
-  .carousel-stage { height: clamp(260px, 62vw, 460px); }
+  .prod-ring { margin-right: 0; }
+  .prod-ring-stage { height: clamp(320px, 88vw, 520px); }
   .prod-grid, .principles { grid-template-columns: 1fr; }
   .hm-proofs ul { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 560px) {
-  .carousel-caption p { display: none; }
   .carousel-tabs button { min-width: 0; flex: 1; padding: 8px 10px 10px; }
   .carousel-tabs span { display: none; }
   .hm-page .tune { top: auto; bottom: 10px; left: 10px; right: 10px; width: auto; max-height: 55vh; }
