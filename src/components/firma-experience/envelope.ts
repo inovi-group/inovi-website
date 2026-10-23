@@ -174,32 +174,3 @@ export function makeWaxSeal(tex: Texture, colors: { seal: Color; ok: Color; bad:
     },
   };
 }
-
-// The envelope's back, for where it can be seen from behind (the home ring): the same brushed gold, the four
-// folds meeting in the middle, a seam along the bottom flap and a small Firma mark (no seal: that is on the front).
-export function drawEnvelopeBack(cv: HTMLCanvasElement, opts: { sans?: string } = {}) {
-  const c = cv.getContext("2d")!, W = cv.width, H = cv.height;
-  const g = c.createLinearGradient(W, 0, 0, H);
-  g.addColorStop(0, "#5f4214"); g.addColorStop(0.3, "#a87a28"); g.addColorStop(0.45, "#dcb766");
-  g.addColorStop(0.55, "#b98a33"); g.addColorStop(0.75, "#7d5a1e"); g.addColorStop(1, "#4f360f");
-  c.fillStyle = g; c.fillRect(0, 0, W, H);
-  let r = 91;
-  const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647);
-  c.globalAlpha = 0.07;
-  for (let n = 0; n < 140; n++) { c.fillStyle = rnd() > 0.5 ? "#fff3cf" : "#3b2808"; c.fillRect(0, rnd() * H, W, 1 + rnd() * 2); }
-  c.globalAlpha = 1;
-  // the folds: side flaps and the bottom flap overlapping in the middle
-  c.strokeStyle = "rgba(60,38,8,0.45)"; c.lineWidth = W * 0.006;
-  c.beginPath(); c.moveTo(0, 0); c.lineTo(W * 0.5, H * 0.56); c.lineTo(W, 0); c.stroke();
-  c.fillStyle = "rgba(255,240,200,0.08)";
-  c.beginPath(); c.moveTo(0, H); c.lineTo(W * 0.5, H * 0.42); c.lineTo(W, H); c.closePath(); c.fill();
-  c.strokeStyle = "rgba(60,38,8,0.55)";
-  c.beginPath(); c.moveTo(W * 0.004, H * 0.994); c.lineTo(W * 0.5, H * 0.42); c.lineTo(W * 0.996, H * 0.994); c.stroke();
-  // a small embossed Firma mark
-  c.strokeStyle = "rgba(60,38,8,0.5)"; c.lineWidth = W * 0.005;
-  c.beginPath(); c.arc(W * 0.5, H * 0.74, H * 0.075, 0, Math.PI * 2); c.stroke();
-  c.fillStyle = "rgba(60,38,8,0.55)"; c.font = `700 ${Math.round(H * 0.085)}px ${opts.sans ?? "sans-serif"}`;
-  c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("F", W * 0.5, H * 0.745);
-  c.textAlign = "left"; c.textBaseline = "alphabetic";
-  c.strokeStyle = "rgba(255,236,180,0.55)"; c.lineWidth = W * 0.008; c.strokeRect(1, 1, W - 2, H - 2);
-}

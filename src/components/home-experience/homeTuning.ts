@@ -7,12 +7,8 @@ export const HOME_DEFAULTS = {
   // rotation
   interval: 7,          // seconds each product stays in front before the ring turns to the next (0 = no autoplay)
   turnSpeed: 1.0,       // how fast the ring turns (1 = about 1.4 s per turn)
-  spin: 1.0,            // the objects' own gentle motion overall (0 = still)
-  // each object's front points radially outward from the ring's centre; on top of that it sways and drifts
-  swayLimit: 20,        // how far it sways either way from radially outward (degrees, at most 45)
-  swayTilt: 8,          // how far it tilts forward and back (degrees, at most 45)
-  swaySpeed: 1.0,       // how fast it sways and drifts (1 = one slow sway every ~30 s)
-  drift: 0.08,          // how far it drifts from its place (units)
+  spin: 1.0,            // the objects' own gentle floating and turning (0 = still)
+  envMaxYaw: 45,        // the envelope never turns further than this from facing the camera (degrees, at most 80)
   // layout
   ringRadius: 2.6,      // radius of the turntable
   objectScale: 1.0,
@@ -43,11 +39,8 @@ export const HOME_PARAMS: { group: string; items: { key: HomeKey; label: string;
   { group: "Rotation", items: [
     { key: "interval", label: "Interval (s, 0 = off)", min: 0, max: 20, step: 0.5 },
     { key: "turnSpeed", label: "Turn speed", min: 0.2, max: 3, step: 0.05 },
-    { key: "spin", label: "Object motion (overall)", min: 0, max: 2, step: 0.05 },
-    { key: "swayLimit", label: "Sway limit (°)", min: 0, max: 45, step: 0.5 },
-    { key: "swayTilt", label: "Tilt (°)", min: 0, max: 45, step: 0.5 },
-    { key: "swaySpeed", label: "Sway speed", min: 0.1, max: 3, step: 0.05 },
-    { key: "drift", label: "Drift", min: 0, max: 0.4, step: 0.005 },
+    { key: "spin", label: "Object float / turn", min: 0, max: 3, step: 0.05 },
+    { key: "envMaxYaw", label: "Envelope max turn (°)", min: 0, max: 80, step: 1 },
   ] },
   { group: "Layout", items: [
     { key: "ringRadius", label: "Ring radius", min: 1.2, max: 4.5, step: 0.05 },
