@@ -121,7 +121,7 @@ const auroraMaterial = () => new ShaderMaterial({
 
 // The glow an envelope radiates, hugging its rectangular shape: a rounded rectangle with a soft falloff,
 // drawn on a plane a little larger than the envelope and turned with it.
-const rectGlowMaterial = () => new ShaderMaterial({
+export const rectGlowMaterial = () => new ShaderMaterial({
   uniforms: { uHalf: { value: new Vector2(1.45, 0.95) }, uPlane: { value: new Vector2(4, 3) }, uFall: { value: 0.4 }, uColor: { value: new Color("#ffc561") }, uOpacity: { value: 0 } },
   vertexShader: VERT,
   fragmentShader: /* glsl */ `

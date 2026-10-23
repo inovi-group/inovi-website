@@ -33,7 +33,9 @@ import {
 } from "three";
 import { AGRO_DEFAULTS } from "../agro-experience/agroTuning";
 import { beamMaterial, dotTexture, plinthMaterial, plotKit } from "../agro-experience/soilScene";
-import { ENV, drawEnvelopeFace, makeEnvelope } from "../firma-experience/envelope";
+import { ENV, drawEnvelopeFace, drawWaxSeal, makeEnvelope, makeWaxSeal } from "../firma-experience/envelope";
+import { rectGlowMaterial } from "../firma-experience/heroScene";
+import { HERO_DEFAULTS } from "../firma-experience/heroTuning";
 import { drawDeal } from "../isale-experience/pipelineScene";
 import { DepthOfFieldEffect, EffectPass } from "postprocessing";
 import { homeTune as T } from "./homeTuning";
@@ -58,22 +60,6 @@ export const PRODUCTS = ["fides", "agro", "isale"] as const;
 
 type Fonts = { sans: string; mono: string };
 const canvasOf = (w: number, h: number) => Object.assign(document.createElement("canvas"), { width: w, height: h });
-
-// FIRMA's wax seal (the same crimson as on the Fides envelopes), drawn light so the material colour tints it
-function drawSeal(cv: HTMLCanvasElement, F: Fonts) {
-  const c = cv.getContext("2d")!, W = cv.width, cx = W / 2;
-  c.clearRect(0, 0, W, W);
-  c.beginPath();
-  for (let a = 0; a <= 64; a++) {
-    const t = (a / 64) * TAU, r = W * 0.46 + Math.sin(t * 9) * W * 0.018 + Math.sin(t * 5 + 1) * W * 0.012;
-    c.lineTo(cx + Math.cos(t) * r, cx + Math.sin(t) * r);
-  }
-  c.closePath(); c.fillStyle = "#f3e2b8"; c.fill();
-  c.strokeStyle = "#c9b081"; c.lineWidth = W * 0.03;
-  c.beginPath(); c.arc(cx, cx, W * 0.33, 0, TAU); c.stroke();
-  c.fillStyle = "#b39a6c"; c.font = `700 ${W * 0.36}px ${F.sans}`; c.textAlign = "center"; c.textBaseline = "middle";
-  c.fillText("F", cx, cx + W * 0.02);
-}
 
 // Atmospheric depth, as a grade on the rendered scene: the further an object is behind the front one, the more
 // haze, the less saturation and contrast and the less light. The empty background is left as it is; each pixel
@@ -157,21 +143,29 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   // ---- the three objects ----
   const slots = PRODUCTS.map(() => { const outer = new Group(), inner = new Group(); outer.add(inner); turntable.add(outer); return { outer, inner }; });
 
-  // FIDES: the golden envelope with its crimson wax seal, glowing a little
+  // FIDES: the Fides hero's own envelope: the same model, gold face, crimson wax seal (pressed), gold light and
+  // rectangular edge glow, with the hero's tuned defaults (HERO_DEFAULTS)
   const faceCv = canvasOf(1024, Math.round((1024 * ENV.h) / ENV.w));
   const face = texOf(faceCv);
   const waxCv = canvasOf(256, 256);
-  const waxMat = new MeshBasicMaterial({ map: texOf(waxCv), color: "#8f1d2c", transparent: true });
-  const wax = new Mesh(new CircleGeometry(0.15, 40), waxMat);
-  const env = makeEnvelope(face, { g: (() => { const g = new Group(); g.add(wax); return g; })(), set(_l, _v, _b, a) { waxMat.opacity = a; } });
+  const sealColors = { seal: new Color(HERO_DEFAULTS.stampColor), ok: new Color("#46b876"), bad: new Color("#ef5a4c") };
+  const env = makeEnvelope(face, makeWaxSeal(texOf(waxCv), sealColors));
   env.setOpacity(1);
-  // its edges write depth here, so depth of field keeps them with the envelope instead of blurring them as background
+  // its edges write depth here, so the depth modes keep them with the envelope rather than the background
   (env.edges.material as LineBasicMaterial).depthWrite = true;
-  env.g.scale.setScalar(0.58);
-  env.g.rotation.set(0.12, 0, -0.06);
-  const envGlow = new Sprite(new SpriteMaterial({ map: dot, color: "#ffc561", transparent: true, blending: AdditiveBlending, depthWrite: false }));
-  envGlow.scale.set(3.4, 2.4, 1); envGlow.position.z = -0.2;
-  slots[0].inner.add(envGlow, env.g);
+  env.g.scale.setScalar(0.62);
+  env.g.rotation.set(0.12, 0, -0.04);
+  const envGlow = new Mesh(new PlaneGeometry(1, 1), rectGlowMaterial());
+  envGlow.renderOrder = -0.8;
+  envGlow.position.z = -ENV.d / 2 - 0.01;
+  {
+    const fall = 0.12 + 0.55 * HERO_DEFAULTS.glowRadius, margin = 2.4 * fall; // as in the hero
+    const pw = ENV.w + 2 * margin, ph = ENV.h + 2 * margin, u = (envGlow.material as ShaderMaterial).uniforms;
+    envGlow.scale.set(pw, ph, 1);
+    u.uPlane.value.set(pw, ph); u.uHalf.value.set(ENV.w / 2, ENV.h / 2); u.uFall.value = fall;
+  }
+  env.g.add(envGlow);
+  slots[0].inner.add(env.g);
 
   // AGRO: the Agro page's own plot, small: soil strata, crops, drip lines, water under the roots, a glowing probe
   const kit = plotKit(rnd);
@@ -234,7 +228,7 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   slots[2].inner.add(stackGlow);
 
   const redraw = () => {
-    drawSeal(sealCv, fonts); drawSeal(waxCv, fonts);
+    drawWaxSeal(sealCv, fonts.sans); drawWaxSeal(waxCv, fonts.sans);
     drawEnvelopeFace(faceCv);
     cards.forEach((c) => drawDeal(c.cv, c.d, true, fonts));
     textures.forEach((t) => { t.needsUpdate = true; });
@@ -250,7 +244,7 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   quad.frustumCulled = false;
   post.add(quad);
 
-  const glows = [envGlow, plotGlow, stackGlow];
+  const glows = [null, plotGlow, stackGlow];
   // depth of field: pmndrs DepthOfFieldEffect, made the first time it is switched on. It runs on the same
   // render (full resolution, multisampled, half float, linear) as the atmosphere grade, with its depth.
   let dofChain: { pass: EffectPass; effect: DepthOfFieldEffect; w: number; h: number } | null = null;
@@ -285,23 +279,42 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
       (r.material as SpriteMaterial).opacity = 0.8 * T.firmaRing;
     });
 
+    // the camera: in front of the ring, a little above, looking at the front object
+    const D = T.cameraDistance;
+    camera.aspect = w / h;
+    // phones (tall stage): step back so the two at the back stay in view
+    const fit = w / h < 1 ? 1 + (1 - w / h) * 0.9 : 1;
+    camera.position.set(0, Math.sin(T.elevation) * D * fit + 0.1, R + Math.cos(T.elevation) * D * fit);
+    camera.lookAt(0, -0.05, R * 0.55);
+    camera.updateProjectionMatrix();
+
     slots.forEach((s, i) => {
       const a = (i * TAU) / 3;
       s.outer.position.set(Math.sin(a) * R, 0, Math.cos(a) * R);
-      // each object turns only a quarter as far as the turntable, so it keeps mostly facing you as it comes round
-      const orbit = Math.atan2(Math.sin(a + turntable.rotation.y), Math.cos(a + turntable.rotation.y)); // 0 at the front, wrapped to ±π
-      s.outer.rotation.y = 0.25 * orbit - turntable.rotation.y;
-      const front = Math.max(0, Math.cos(a + turntable.rotation.y)); // 1 when this one is at the front
-      s.inner.position.y = sp * Math.sin(t * 0.6 + i * 2) * 0.06;
-      s.inner.rotation.y = sp * Math.sin(t * 0.25 + i) * 0.18;
+      // always facing the camera: the yaw is locked toward it (a billboard on the vertical axis) wherever the
+      // object is on the ring, so its face is never seen side-on or from behind
+      const wa = a + turntable.rotation.y; // its angle on the ring in the world (0 = the front)
+      const wx = Math.sin(wa) * R, wz = Math.cos(wa) * R;
+      s.outer.rotation.y = Math.atan2(camera.position.x - wx, camera.position.z - wz) - turntable.rotation.y;
+      const front = Math.max(0, Math.cos(wa)); // 1 when this one is at the front
+      // on top of facing the camera: a slow sway of yaw and tilt within a small range (capped at ±25°, so the
+      // face never turns away or edge-on) and a soft drift, each on its own slow, unrelated rhythm
+      const ws = t * T.swaySpeed, cap = (deg: number) => (Math.min(25, Math.max(0, deg)) * Math.PI) / 180;
+      s.inner.rotation.y = sp * cap(T.swayYaw) * (0.7 * Math.sin(ws * 0.21 + i * 2.1) + 0.3 * Math.sin(ws * 0.13 + i));
+      s.inner.rotation.x = sp * cap(T.swayTilt) * (0.7 * Math.sin(ws * 0.17 + i * 1.3) + 0.3 * Math.sin(ws * 0.11 + i * 0.7));
+      s.inner.position.set(
+        sp * T.drift * Math.sin(ws * 0.15 + i * 1.7),
+        sp * T.drift * (0.75 * Math.sin(ws * 0.31 + i * 2) + 0.25 * Math.sin(ws * 0.19)),
+        sp * T.drift * 0.6 * Math.sin(ws * 0.12 + i * 0.9));
       // the ones at the back are drawn a little smaller than perspective alone makes them (atmosphere mode)
       s.outer.scale.setScalar(T.objectScale * (T.depthMode >= 1 ? 1 : lerp(T.backScale, 1, front)));
-      (glows[i].material as SpriteMaterial).opacity = (0.12 + 0.28 * front) * T.frontGlow;
+      const glow = glows[i];
+      if (glow) (glow.material as SpriteMaterial).opacity = (0.12 + 0.28 * front) * T.frontGlow;
     });
-    // FIDES glows like the stream's envelopes when in front
+    // FIDES: lit and glowing like the hero's envelopes (in the beam), its edge glow as strong as theirs
     const fFront = Math.max(0, Math.cos(turntable.rotation.y));
-    env.setLight(0.5 + 0.3 * fFront, 0.25 + 0.6 * fFront * T.frontGlow);
-    env.g.rotation.x = 0.12 + sp * Math.sin(t * 0.4) * 0.05;
+    env.setLight(1, HERO_DEFAULTS.envelopeGlow);
+    (envGlow.material as ShaderMaterial).uniforms.uOpacity.value = Math.min(1.5, 0.9 * HERO_DEFAULTS.envelopeGlow) * lerp(0.35, 1, fFront) * T.frontGlow;
     // AGRO: water breathing under the crops, sensors pulsing
     SU.uTime.value = t; SU.uF.value = 0.85 + (still ? 0 : Math.sin(t * 0.5) * 0.06); SU.uFlow.value = 1; SU.uDry.value = 0; SU.uMap.value = 0;
     kit.plantsMat.uniforms.uTime.value = t; kit.plantsMat.uniforms.uSway.value = still ? 0 : 1;
@@ -323,15 +336,6 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
     beam.position.set(0, 1.9, R - 0.7); beam.scale.set(4.2, 6, 1);
     pool.position.set(0, FLOOR_Y + 0.004, R); (pool.material as MeshBasicMaterial).opacity = 0.35 * T.spotlight;
     (floor.material as ShaderMaterial).uniforms.uAlpha.value = 0.5;
-
-    // the camera: in front of the ring, a little above, looking at the front object
-    const D = T.cameraDistance;
-    camera.aspect = w / h;
-    // phones (tall stage): step back so the two at the back stay in view
-    const fit = w / h < 1 ? 1 + (1 - w / h) * 0.9 : 1;
-    camera.position.set(0, Math.sin(T.elevation) * D * fit + 0.1, R + Math.cos(T.elevation) * D * fit);
-    camera.lookAt(0, -0.05, R * 0.55);
-    camera.updateProjectionMatrix();
 
     // render
     renderer.getDrawingBufferSize(size);

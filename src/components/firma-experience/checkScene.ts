@@ -36,7 +36,7 @@ import type { StoryData, Score, Reality, Decision, ChainRecord } from "./content
 import { createMonth } from "./monthScene";
 import { createHero } from "./heroScene";
 import { heroTune } from "./heroTuning";
-import { ENV, drawEnvelopeFace, envelopeOutline, makeEnvelope } from "./envelope";
+import { ENV, drawEnvelopeFace, drawWaxSeal, envelopeOutline, makeEnvelope, makeWaxSeal } from "./envelope";
 
 export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 export const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
@@ -346,20 +346,7 @@ function drawToken(cv: Cv, text: string) {
 }
 
 // Emblem art, drawn light so the material colour can tint it gold / green / red.
-function drawWax(cv: Cv) {
-  const c = cv.getContext("2d")!, W = cv.width, H = cv.height, cx = W / 2, cy = H / 2;
-  c.clearRect(0, 0, W, H);
-  c.beginPath();
-  for (let a = 0; a <= 64; a++) {
-    const t = (a / 64) * Math.PI * 2, rr = W * 0.46 + Math.sin(t * 9) * W * 0.018 + Math.sin(t * 5 + 1) * W * 0.012;
-    c.lineTo(cx + Math.cos(t) * rr, cy + Math.sin(t) * rr);
-  }
-  c.closePath(); c.fillStyle = "#f3e2b8"; c.fill();
-  c.strokeStyle = "#c9b081"; c.lineWidth = W * 0.03;
-  c.beginPath(); c.arc(cx, cy, W * 0.33, 0, Math.PI * 2); c.stroke();
-  c.fillStyle = "#b39a6c"; c.font = `700 ${W * 0.36}px ${F.sans}`; c.textAlign = "center"; c.textBaseline = "middle";
-  c.fillText("F", cx, cy + W * 0.02);
-}
+function drawWax(cv: Cv) { drawWaxSeal(cv, F.sans); }
 function drawShield(cv: Cv) {
   const c = cv.getContext("2d")!, W = cv.width, H = cv.height;
   c.clearRect(0, 0, W, H);
@@ -546,30 +533,7 @@ export function createCheck({ root: stage, camera, gl, data, fonts, setBackdrop:
     };
   }
   // B: wax seal — stamped down when sealed, cracks in two when tampered
-  function wax(): Emblem {
-    const g = new Group();
-    const halves = [0, 1].map((side) => {
-      const m = new Mesh(new CircleGeometry(0.15, 40, side ? -Math.PI / 2 : Math.PI / 2, Math.PI),
-        new MeshBasicMaterial({ map: waxTex, color: SEAL.clone(), transparent: true }));
-      g.add(m);
-      return m;
-    });
-    return {
-      g,
-      set(lock, ver, brk, alpha) {
-        const press = ease(clamp01(lock));
-        g.scale.setScalar(lerp(1.9, 1, press) * (1 + Math.sin(Math.PI * clamp01((lock - 0.7) * 3.3)) * -0.08));
-        g.position.z = lerp(0.45, 0.05, press);
-        halves.forEach((h, i) => {
-          const dir = i ? 1 : -1;
-          h.position.x = dir * brk * 0.05; h.position.y = -brk * 0.02 * (i ? 1 : -1);
-          h.rotation.z = dir * brk * -0.28;
-          h.material.color.copy(SEAL).lerp(OK, ver * 0.55).lerp(BAD, brk);
-          h.material.opacity = alpha * clamp01(lock * 2.5);
-        });
-      },
-    };
-  }
+  function wax(): Emblem { return makeWaxSeal(waxTex, { seal: SEAL, ok: OK, bad: BAD }); }
   // C: shield — rises and glows when verified, splits when tampered (inside a vault column, below)
   function shield(): Emblem {
     const g = new Group();

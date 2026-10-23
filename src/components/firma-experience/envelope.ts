@@ -1,6 +1,8 @@
 import {
   BoxGeometry,
   BufferGeometry,
+  CircleGeometry,
+  type Color,
   EdgesGeometry,
   Float32BufferAttribute,
   Group,
@@ -124,4 +126,51 @@ export function envelopeOutline() {
   const geo = new BufferGeometry();
   geo.setAttribute("position", new Float32BufferAttribute(pts, 3));
   return geo;
+}
+
+const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+const easeIO = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+
+// Firma's wax seal art, drawn light so the material colour can tint it (crimson, or green / red when checked).
+export function drawWaxSeal(cv: HTMLCanvasElement, sans: string) {
+  const c = cv.getContext("2d")!, W = cv.width, H = cv.height, cx = W / 2, cy = H / 2;
+  c.clearRect(0, 0, W, H);
+  c.beginPath();
+  for (let a = 0; a <= 64; a++) {
+    const t = (a / 64) * Math.PI * 2, rr = W * 0.46 + Math.sin(t * 9) * W * 0.018 + Math.sin(t * 5 + 1) * W * 0.012;
+    c.lineTo(cx + Math.cos(t) * rr, cy + Math.sin(t) * rr);
+  }
+  c.closePath(); c.fillStyle = "#f3e2b8"; c.fill();
+  c.strokeStyle = "#c9b081"; c.lineWidth = W * 0.03;
+  c.beginPath(); c.arc(cx, cy, W * 0.33, 0, Math.PI * 2); c.stroke();
+  c.fillStyle = "#b39a6c"; c.font = `700 ${W * 0.36}px ${sans}`; c.textAlign = "center"; c.textBaseline = "middle";
+  c.fillText("F", cx, cy + W * 0.02);
+}
+
+// The wax seal on the envelope's flap: stamped down when sealed, cracks in two when tampered. The colours are
+// read every time it is set (the Fides scene changes the seal colour live).
+export function makeWaxSeal(tex: Texture, colors: { seal: Color; ok: Color; bad: Color }): Emblem {
+  const g = new Group();
+  const halves = [0, 1].map((side) => {
+    const m = new Mesh(new CircleGeometry(0.15, 40, side ? -Math.PI / 2 : Math.PI / 2, Math.PI),
+      new MeshBasicMaterial({ map: tex, color: colors.seal.clone(), transparent: true }));
+    g.add(m);
+    return m;
+  });
+  return {
+    g,
+    set(lock, ver, brk, alpha) {
+      const press = easeIO(clamp01(lock));
+      g.scale.setScalar(mix(1.9, 1, press) * (1 + Math.sin(Math.PI * clamp01((lock - 0.7) * 3.3)) * -0.08));
+      g.position.z = mix(0.45, 0.05, press);
+      halves.forEach((h, i) => {
+        const dir = i ? 1 : -1;
+        h.position.x = dir * brk * 0.05; h.position.y = -brk * 0.02 * (i ? 1 : -1);
+        h.rotation.z = dir * brk * -0.28;
+        h.material.color.copy(colors.seal).lerp(colors.ok, ver * 0.55).lerp(colors.bad, brk);
+        h.material.opacity = alpha * clamp01(lock * 2.5);
+      });
+    },
+  };
 }
