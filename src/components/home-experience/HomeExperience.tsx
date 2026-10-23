@@ -31,7 +31,12 @@ function ProductCard({ p }: { p: Product }) {
  */
 export function HomeExperience() {
   const [tune, setTune] = useState(false);
-  useEffect(() => { setTune(new URLSearchParams(window.location.search).get("tune") === "1"); }, []);
+  useEffect(() => {
+    const on = new URLSearchParams(window.location.search).get("tune") === "1";
+    // a plain visit always shows the defaults, even after tuning earlier in the same session
+    if (!on) Object.assign(homeTune, HOME_DEFAULTS);
+    setTune(on);
+  }, []);
 
   return (
     <div className="hm-page">

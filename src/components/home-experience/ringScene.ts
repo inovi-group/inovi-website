@@ -6,7 +6,6 @@ import {
   CircleGeometry,
   Color,
   DepthTexture,
-  DoubleSide,
   EdgesGeometry,
   Group,
   HalfFloatType,
@@ -33,7 +32,7 @@ import {
 } from "three";
 import { AGRO_DEFAULTS } from "../agro-experience/agroTuning";
 import { beamMaterial, dotTexture, plinthMaterial, plotKit } from "../agro-experience/soilScene";
-import { ENV, drawEnvelopeFace, drawWaxSeal, makeEnvelope, makeWaxSeal } from "../firma-experience/envelope";
+import { ENV, drawEnvelopeBack, drawEnvelopeFace, drawWaxSeal, makeEnvelope, makeWaxSeal } from "../firma-experience/envelope";
 import { rectGlowMaterial } from "../firma-experience/heroScene";
 import { HERO_DEFAULTS } from "../firma-experience/heroTuning";
 import { drawDeal } from "../isale-experience/pipelineScene";
@@ -55,12 +54,27 @@ import { homeTune as T } from "./homeTuning";
  */
 const TAU = Math.PI * 2;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const smoothstep = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const FLOOR_Y = -1.05;
 export const PRODUCTS = ["fides", "agro", "isale"] as const;
 
 type Fonts = { sans: string; mono: string };
 const canvasOf = (w: number, h: number) => Object.assign(document.createElement("canvas"), { width: w, height: h });
+
+// The back of an iSale deal card: the card's frame, faint lines and the iSale mark (no mirrored text).
+function drawCardBack(cv: HTMLCanvasElement, F: Fonts) {
+  const c = cv.getContext("2d")!, W = cv.width, H = cv.height;
+  c.clearRect(0, 0, W, H);
+  c.beginPath(); c.moveTo(28, 6); c.arcTo(W - 6, 6, W - 6, H - 6, 22); c.arcTo(W - 6, H - 6, 6, H - 6, 22); c.arcTo(6, H - 6, 6, 6, 22); c.arcTo(6, 6, W - 6, 6, 22); c.closePath();
+  c.fillStyle = "rgba(14,20,32,0.96)"; c.fill();
+  c.lineWidth = 4; c.strokeStyle = "rgba(69,147,255,0.55)"; c.stroke();
+  c.save(); c.clip();
+  c.strokeStyle = "rgba(69,147,255,0.12)"; c.lineWidth = 2;
+  for (let x = 40; x < W + 60; x += 36) { c.beginPath(); c.moveTo(x, 20); c.lineTo(x - 60, H - 20); c.stroke(); }
+  c.restore();
+  c.fillStyle = "#4593ff"; c.fillRect(W / 2 - 62, H / 2 - 9, 18, 18);
+  c.fillStyle = "rgba(195,202,214,0.85)"; c.font = `700 40px ${F.sans}`; c.textBaseline = "middle"; c.fillText("iSale", W / 2 - 34, H / 2 + 2);
+  c.textBaseline = "alphabetic";
+}
 
 // Atmospheric depth, as a grade on the rendered scene: the further an object is behind the front one, the more
 // haze, the less saturation and contrast and the less light. The empty background is left as it is; each pixel
@@ -151,6 +165,10 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   const waxCv = canvasOf(256, 256);
   const sealColors = { seal: new Color(HERO_DEFAULTS.stampColor), ok: new Color("#46b876"), bad: new Color("#ef5a4c") };
   const env = makeEnvelope(face, makeWaxSeal(texOf(waxCv), sealColors));
+  // its back: seen when it is at the back of the ring
+  const backCv = canvasOf(1024, Math.round((1024 * ENV.h) / ENV.w));
+  const envBack = (env.box.material as MeshBasicMaterial[])[5];
+  envBack.map = texOf(backCv); envBack.color.set("#ffffff"); envBack.needsUpdate = true;
   env.setOpacity(1);
   // its edges write depth here, so the depth modes keep them with the envelope rather than the background
   (env.edges.material as LineBasicMaterial).depthWrite = true;
@@ -211,9 +229,14 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
     { name: "DEAL 04", stage: "Proposal · 20 days", risk: 0.47, note: "DISCOUNT PRESSURE" },
   ];
   const cardGeo = new PlaneGeometry(1.5, 0.75);
+  const cardBackCv = canvasOf(512, 256), cardBack = texOf(cardBackCv);
   const cards = deals.map((d, k) => {
     const cv = canvasOf(512, 256);
-    const m = new Mesh(cardGeo, new MeshBasicMaterial({ map: texOf(cv), alphaTest: 0.5, side: DoubleSide }) /* opaque: no card shows through another */);
+    const m = new Mesh(cardGeo, new MeshBasicMaterial({ map: texOf(cv), alphaTest: 0.5 }) /* opaque: no card shows through another */);
+    // its back (seen when the stack is at the back of the ring): a plain card back, not mirrored text
+    const back = new Mesh(cardGeo, new MeshBasicMaterial({ map: cardBack, alphaTest: 0.5 }));
+    back.rotation.y = Math.PI; back.position.z = -0.002;
+    m.add(back);
     m.position.set((k - 1.5) * 0.12, (1.5 - k) * 0.3 - 0.05, (k - 1.5) * -0.28);
     m.rotation.set(-0.12, 0.18, 0);
     slots[2].inner.add(m);
@@ -231,6 +254,8 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   const redraw = () => {
     drawWaxSeal(sealCv, fonts.sans); drawWaxSeal(waxCv, fonts.sans);
     drawEnvelopeFace(faceCv);
+    drawEnvelopeBack(backCv, { sans: fonts.sans });
+    drawCardBack(cardBackCv, fonts);
     cards.forEach((c) => drawDeal(c.cv, c.d, true, fonts));
     textures.forEach((t) => { t.needsUpdate = true; });
   };
@@ -292,20 +317,13 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
     slots.forEach((s, i) => {
       const a = (i * TAU) / 3;
       s.outer.position.set(Math.sin(a) * R, 0, Math.cos(a) * R);
-      // always facing the camera: the yaw is locked toward it (a billboard on the vertical axis) wherever the
-      // object is on the ring, so its face is never seen side-on or from behind
-      const wa = a + turntable.rotation.y; // its angle on the ring in the world (0 = the front)
-      const wx = Math.sin(wa) * R, wz = Math.cos(wa) * R;
-      const front = Math.max(0, Math.cos(wa)); // 1 when this one is at the front
-      // at the back it rests turned away (toward the ring's centre, or outward), easing round to face the camera
-      // as it comes to the front; capped at 60° (with the sway's 25°, never more than 85°: its back never shows)
-      const away = 1 - smoothstep(0.3, 0.95, front);
-      const back = (Math.max(-60, Math.min(60, T.backAngle)) * Math.PI) / 180 * -Math.sign(wx) * away;
-      s.outer.rotation.y = Math.atan2(camera.position.x - wx, camera.position.z - wz) + back - turntable.rotation.y;
-      // on top of facing the camera: a slow sway of yaw and tilt within a small range (capped at ±25°, so the
-      // face never turns away or edge-on) and a soft drift, each on its own slow, unrelated rhythm
-      const ws = t * T.swaySpeed, cap = (deg: number) => (Math.min(25, Math.max(0, deg)) * Math.PI) / 180;
-      s.inner.rotation.y = sp * cap(T.swayYaw) * (0.7 * Math.sin(ws * 0.21 + i * 2.1) + 0.3 * Math.sin(ws * 0.13 + i));
+      // its front points radially outward, away from the ring's centre, and turns with the ring (so the one at
+      // the front faces the camera); on top of that, a gentle sway within ±swayLimit
+      s.outer.rotation.y = a;
+      const front = Math.max(0, Math.cos(a + turntable.rotation.y)); // 1 when this one is at the front
+      // a slow sway of yaw (within ±swayLimit) and tilt, and a soft drift, each on its own slow, unrelated rhythm
+      const ws = t * T.swaySpeed, cap = (deg: number) => (Math.min(45, Math.max(0, deg)) * Math.PI) / 180;
+      s.inner.rotation.y = sp * cap(T.swayLimit) * (0.7 * Math.sin(ws * 0.21 + i * 2.1) + 0.3 * Math.sin(ws * 0.13 + i));
       s.inner.rotation.x = sp * cap(T.swayTilt) * (0.7 * Math.sin(ws * 0.17 + i * 1.3) + 0.3 * Math.sin(ws * 0.11 + i * 0.7));
       s.inner.position.set(
         sp * T.drift * Math.sin(ws * 0.15 + i * 1.7),
