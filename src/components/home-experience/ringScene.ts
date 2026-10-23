@@ -4,6 +4,7 @@ import {
   BufferGeometry,
   CanvasTexture,
   CircleGeometry,
+  Color,
   DepthTexture,
   DoubleSide,
   EdgesGeometry,
@@ -34,6 +35,7 @@ import { AGRO_DEFAULTS } from "../agro-experience/agroTuning";
 import { beamMaterial, dotTexture, plinthMaterial, plotKit } from "../agro-experience/soilScene";
 import { ENV, drawEnvelopeFace, makeEnvelope } from "../firma-experience/envelope";
 import { drawDeal } from "../isale-experience/pipelineScene";
+import { DepthOfFieldEffect, EffectPass } from "postprocessing";
 import { homeTune as T } from "./homeTuning";
 
 /**
@@ -42,9 +44,12 @@ import { homeTune as T } from "./homeTuning";
  * its root zone and water under the crops; iSale a floating stack of deal cards, the risky one flagged red.
  * At the centre, on the floor, FIRMA: a gold ring through all three and its seal in the middle.
  *
- * The object at the front is close, large, sharp and lit (a soft column of light falls on it). Depth of field is
- * real: the scene is rendered with its depth, then a blur pass widens with distance behind the front object and
- * darkens it, so the two at the back are smaller (perspective), darker and blurred, never hidden.
+ * The object at the front is close, large, sharp and lit (a soft column of light falls on it). The two at the
+ * back recede in one of two ways (homeTune.depthMode):
+ *   0  atmosphere (the default): no blur. The scene is rendered with its depth, then graded by depth: the
+ *      objects behind the front one take on a haze, lose some saturation and contrast and are lit less, and
+ *      they are drawn a little smaller. Their silhouettes take the grade of the object, so no bright fringe.
+ *   1  depth of field: pmndrs postprocessing's DepthOfFieldEffect at full resolution, focused on the front.
  */
 const TAU = Math.PI * 2;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -70,38 +75,36 @@ function drawSeal(cv: HTMLCanvasElement, F: Fonts) {
   c.fillText("F", cx, cx + W * 0.02);
 }
 
-// The depth-of-field pass: a golden-spiral blur whose radius grows with depth behind the focus; samples from
-// sharper (nearer) pixels are left out of a blurred pixel, so the front object doesn't halo onto the back ones.
-function dofMaterial() {
+// Atmospheric depth, as a grade on the rendered scene: the further an object is behind the front one, the more
+// haze, the less saturation and contrast and the less light. The empty background is left as it is; each pixel
+// takes the strongest grade of its 3×3 neighbours, so an object's antialiased edge is graded with it.
+function gradeMaterial() {
   return new ShaderMaterial({
     uniforms: {
       tColor: { value: null }, tDepth: { value: null }, uRes: { value: new Vector2(1, 1) },
-      uNear: { value: 0.1 }, uFar: { value: 100 }, uFocus: { value: 7 }, uRange: { value: 1 },
-      uMaxBlur: { value: 9 }, uDim: { value: 0.4 },
+      uNear: { value: 0.1 }, uFar: { value: 100 }, uFocus: { value: 7 }, uRange: { value: 1 }, uSpan: { value: 3 },
+      uHaze: { value: 0.3 }, uHazeColor: { value: new Color() }, uDesat: { value: 0.5 }, uContrast: { value: 0.3 }, uDim: { value: 0.5 },
     },
     vertexShader: /* glsl */ `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
     fragmentShader: /* glsl */ `
-      uniform sampler2D tColor, tDepth; uniform vec2 uRes;
-      uniform float uNear, uFar, uFocus, uRange, uMaxBlur, uDim;
+      uniform sampler2D tColor, tDepth; uniform vec2 uRes; uniform vec3 uHazeColor;
+      uniform float uNear, uFar, uFocus, uRange, uSpan, uHaze, uDesat, uContrast, uDim;
       varying vec2 vUv;
-      float lin(vec2 uv) { float z = texture2D(tDepth, uv).r * 2.0 - 1.0; return 2.0 * uNear * uFar / (uFar + uNear - z * (uFar - uNear)); }
-      float behind(float d) { return clamp((d - uFocus - uRange) / (2.5 * uRange + 1.0), 0.0, 1.0); }
+      float back(vec2 uv) {
+        float r = texture2D(tDepth, uv).r;
+        if (r > 0.99999) return 0.0; // background
+        float z = r * 2.0 - 1.0, d = 2.0 * uNear * uFar / (uFar + uNear - z * (uFar - uNear));
+        return smoothstep(uFocus + uRange, uFocus + uRange + uSpan, d);
+      }
       void main() {
-        float d = lin(vUv), k = behind(d), coc = k * uMaxBlur;
-        vec4 sum = texture2D(tColor, vUv); float wsum = 1.0;
-        if (coc > 0.5) {
-          for (int i = 1; i < 40; i++) {
-            float fi = float(i), r = sqrt(fi / 40.0) * coc, a = fi * 2.39996;
-            vec2 o = vec2(cos(a), sin(a)) * r / uRes;
-            float sk = behind(lin(vUv + o)) * uMaxBlur;
-            float w = smoothstep(0.0, 1.0, sk / max(r, 1.0));
-            sum += texture2D(tColor, vUv + o) * w; wsum += w;
-          }
-        }
-        vec4 col = sum / wsum;
-        // dim the objects at the back, not the empty background (cleared to the page colour, so the edge never shows)
-        float bg = step(0.99999, texture2D(tDepth, vUv).r);
-        col.rgb *= mix(mix(1.0, uDim, smoothstep(0.0, 0.6, k)), 1.0, bg);
+        vec4 col = texture2D(tColor, vUv);
+        float k = 0.0;
+        for (int x = -1; x <= 1; x++) for (int y = -1; y <= 1; y++) k = max(k, back(vUv + vec2(float(x), float(y)) / uRes));
+        float l = dot(col.rgb, vec3(0.2126, 0.7152, 0.0722));
+        col.rgb = mix(col.rgb, vec3(l), k * uDesat);                       // less saturation
+        col.rgb = mix(col.rgb, vec3(l * 0.6 + 0.02), k * uContrast);       // less contrast (toward a soft mid)
+        col.rgb = mix(col.rgb, uHazeColor, k * uHaze);                     // haze
+        col.rgb *= mix(1.0, uDim, k);                                      // less light
         gl_FragColor = col;
         #include <colorspace_fragment>
       }`,
@@ -162,6 +165,8 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   const wax = new Mesh(new CircleGeometry(0.15, 40), waxMat);
   const env = makeEnvelope(face, { g: (() => { const g = new Group(); g.add(wax); return g; })(), set(_l, _v, _b, a) { waxMat.opacity = a; } });
   env.setOpacity(1);
+  // its edges write depth here, so depth of field keeps them with the envelope instead of blurring them as background
+  (env.edges.material as LineBasicMaterial).depthWrite = true;
   env.g.scale.setScalar(0.58);
   env.g.rotation.set(0.12, 0, -0.06);
   const envGlow = new Sprite(new SpriteMaterial({ map: dot, color: "#ffc561", transparent: true, blending: AdditiveBlending, depthWrite: false }));
@@ -236,16 +241,29 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   };
   redraw();
 
-  // ---- depth of field: render the scene with its depth, then blur by depth onto the screen ----
+  // ---- depth: atmosphere (render with depth, then grade) or depth of field (pmndrs postprocessing) ----
   const size = new Vector2();
   const rt = new WebGLRenderTarget(1, 1, { type: HalfFloatType, samples: 4, depthTexture: new DepthTexture(1, 1) });
-  const dof = dofMaterial();
+  const grade = gradeMaterial();
   const post = new Scene(), postCam = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const quad = new Mesh(new PlaneGeometry(2, 2), dof);
+  const quad = new Mesh(new PlaneGeometry(2, 2), grade);
   quad.frustumCulled = false;
   post.add(quad);
 
   const glows = [envGlow, plotGlow, stackGlow];
+  // depth of field: pmndrs DepthOfFieldEffect, made the first time it is switched on. It runs on the same
+  // render (full resolution, multisampled, half float, linear) as the atmosphere grade, with its depth.
+  let dofChain: { pass: EffectPass; effect: DepthOfFieldEffect; w: number; h: number } | null = null;
+  const dofChainOf = () => {
+    if (dofChain) return dofChain;
+    const effect = new DepthOfFieldEffect(camera, { worldFocusDistance: 7, worldFocusRange: 1.5, bokehScale: 3, resolutionScale: 1 });
+    const pass = new EffectPass(camera, effect);
+    pass.renderToScreen = true;
+    pass.initialize(renderer, false, HalfFloatType);
+    pass.setDepthTexture(rt.depthTexture!);
+    dofChain = { pass, effect, w: 0, h: 0 };
+    return dofChain;
+  };
   const anchor = new Vector3(), v = new Vector3(), ray = new Raycaster();
   let rot = 0; // the turntable's angle: product i is at the front when rot = i (in thirds of a turn)
 
@@ -271,12 +289,13 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
       const a = (i * TAU) / 3;
       s.outer.position.set(Math.sin(a) * R, 0, Math.cos(a) * R);
       // each object turns only a quarter as far as the turntable, so it keeps mostly facing you as it comes round
-      const orbit = a + turntable.rotation.y; // 0 at the front
+      const orbit = Math.atan2(Math.sin(a + turntable.rotation.y), Math.cos(a + turntable.rotation.y)); // 0 at the front, wrapped to ±π
       s.outer.rotation.y = 0.25 * orbit - turntable.rotation.y;
       const front = Math.max(0, Math.cos(a + turntable.rotation.y)); // 1 when this one is at the front
       s.inner.position.y = sp * Math.sin(t * 0.6 + i * 2) * 0.06;
       s.inner.rotation.y = sp * Math.sin(t * 0.25 + i) * 0.18;
-      s.outer.scale.setScalar(T.objectScale);
+      // the ones at the back are drawn a little smaller than perspective alone makes them (atmosphere mode)
+      s.outer.scale.setScalar(T.objectScale * (T.depthMode >= 1 ? 1 : lerp(T.backScale, 1, front)));
       (glows[i].material as SpriteMaterial).opacity = (0.12 + 0.28 * front) * T.frontGlow;
     });
     // FIDES glows like the stream's envelopes when in front
@@ -314,19 +333,33 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
     camera.lookAt(0, -0.05, R * 0.55);
     camera.updateProjectionMatrix();
 
-    // render: scene (with depth) → depth of field → screen
+    // render
     renderer.getDrawingBufferSize(size);
+    renderer.setClearColor("#0a0d13", 1);
+    anchor.set(0, 0, R);
+    const focus = camera.position.distanceTo(anchor);
+    // the scene, with its depth
     if (rt.width !== size.x || rt.height !== size.y) rt.setSize(size.x, size.y);
     renderer.setRenderTarget(rt);
-    renderer.setClearColor("#0a0d13", 1);
     renderer.clear();
     renderer.render(scene, camera);
     renderer.setRenderTarget(null);
-    const u = dof.uniforms;
+    if (T.depthMode >= 1) {
+      // depth of field, focused on the front object
+      const c = dofChainOf();
+      if (c.w !== size.x || c.h !== size.y) { c.pass.setSize(size.x, size.y); c.w = size.x; c.h = size.y; }
+      c.effect.cocMaterial.worldFocusDistance = focus;
+      c.effect.cocMaterial.worldFocusRange = T.focusRange * 2;
+      c.effect.bokehScale = T.bokeh;
+      c.pass.render(renderer, rt, null, dt, false);
+      return;
+    }
+    // atmosphere: graded by depth onto the screen
+    const u = grade.uniforms;
     u.tColor.value = rt.texture; u.tDepth.value = rt.depthTexture;
     u.uRes.value.copy(size); u.uNear.value = camera.near; u.uFar.value = camera.far;
-    anchor.set(0, 0, R); u.uFocus.value = camera.position.distanceTo(anchor);
-    u.uRange.value = T.focusRange; u.uMaxBlur.value = T.blur * renderer.getPixelRatio(); u.uDim.value = T.dim;
+    u.uFocus.value = focus; u.uRange.value = T.focusRange; u.uSpan.value = R * 1.2;
+    u.uHaze.value = T.haze; u.uHazeColor.value.set(T.hazeColor); u.uDesat.value = T.desaturate; u.uContrast.value = T.lowerContrast; u.uDim.value = T.dim;
     renderer.render(post, postCam);
   }
 
@@ -361,6 +394,7 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
       }));
       textures.forEach((t) => t.dispose());
       rt.dispose();
+      dofChain?.pass.dispose();
     },
   };
 }
