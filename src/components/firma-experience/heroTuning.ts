@@ -5,56 +5,56 @@
  */
 export const HERO_DEFAULTS = {
   // light source and beam
-  sourceX: 1.0,          // horizontal position of the light's source (0 = scene centre, 1 = its right edge)
-  sourceHeight: 2.0,     // height of the source above the scene's centre (about 1.25 is the top edge: above it, the
+  sourceX: 0.98,         // horizontal position of the light's source (0 = scene centre, 1 = its right edge)
+  sourceHeight: 1.69,    // height of the source above the scene's centre (about 1.25 is the top edge: above it, the
                          // source is off the page and the beam enters from above)
-  sourceDepth: -1.2,     // distance of the beam behind (−) or in front of (+) the deal's plane
-  destX: -0.42,          // where the beam lands: horizontal (0 = scene centre, −1 = its left edge, 1 = its right edge)
+  sourceDepth: -1.25,    // distance of the beam behind (−) or in front of (+) the deal's plane
+  destX: 0.26,           // where the beam lands: horizontal (0 = scene centre, −1 = its left edge, 1 = its right edge)
   destY: -1.6,           // how low it reaches (−1.25 is about the bottom edge of the hero)
-  beamWidth: 0.12,       // half-width of the beam at its source
-  beamSpread: 1.3,       // how much it widens going down (0 = a column with parallel sides)
-  beamLength: 1.0,       // length of the beam (1 = from the source down to the middle bottom)
-  beamOpacity: 0.5,      // density of the beam's body
-  beamBrightness: 0.22,  // the brighter inner core
+  beamWidth: 0.49,       // half-width of the beam at its source
+  beamSpread: 0.16,      // how much it widens going down (0 = a column with parallel sides)
+  beamLength: 0.8,       // length of the beam (1 = from the source down to the middle bottom)
+  beamOpacity: 1.0,      // density of the beam's body
+  beamBrightness: 0.21,  // the brighter inner core
   beamColor: "#2b9c80",
-  coreGlow: 0.5,         // the hot spot at the source
-  beamFluctuation: 1.0,  // 0 = perfectly smooth; 1 = soft drifting streaks; up to 3 = flickering, rippling edges
-  fluctuationSpeed: 1.0,
+  coreGlow: 0.0,         // the hot spot at the source
+  beamFluctuation: 1.44, // 0 = perfectly smooth; 1 = soft drifting streaks; up to 3 = flickering, rippling edges
+  fluctuationSpeed: 0.4,
   // aurora, inside the beam
-  auroraIntensity: 0.45,
-  auroraSpeed: 0.25,     // how fast the ribbons flow (0 = still)
-  auroraLength: 1.25,    // how far down the beam the ribbons reach, in beam lengths (independent of the beam)
-  auroraRibbons: 3,      // how many ribbons flow down the beam
-  auroraWidth: 0.17,     // width of each ribbon, as a share of the beam's width (they stay inside it)
-  auroraSpread: 0.35,    // 0 = all ribbons in the centre, 1 = across the beam's full width, 2 = twice its width
-  auroraTeal: 1.0,       // colour mix: weight of each ribbon
-  auroraViolet: 1.0,
-  auroraGold: 0.5,
+  auroraIntensity: 0.52,
+  auroraSpeed: 0.72,     // how fast the ribbons flow (0 = still)
+  auroraLength: 1.88,    // how far down the beam the ribbons reach, in beam lengths (independent of the beam)
+  auroraRibbons: 6,      // how many ribbons flow down the beam
+  auroraWidth: 0.205,    // width of each ribbon, as a share of the beam's width (they stay inside it)
+  auroraSpread: 1.54,    // 0 = all ribbons in the centre, 1 = across the beam's full width, 2 = twice its width
+  auroraTeal: 1.06,      // colour mix: weight of each ribbon
+  auroraViolet: 0.69,
+  auroraGold: 0.69,
   // envelopes
-  emitterSpread: 0.45,   // how far envelopes fan out across the cone (1 = to its edges)
-  envelopeCount: 16,     // emission rate: how many are in the stream at once (phones show about half)
-  fallSpeed: 0.012,
-  fadeStart: 0.9,        // where along their path envelopes start to fade, in beam lengths (past 1 they leave the beam)
-  fadeLength: 0.1,       // how long the fade takes, in beam lengths
-  sizeMin: 0.3,
-  sizeMax: 0.6,
-  depthNear: 0.9,        // depth range the stream spreads over as it falls
-  depthFar: -2.4,
-  rotation: 1.0,         // amount of gentle turning (0 = none)
+  emitterSpread: 0.92,   // how far envelopes fan out across the cone (1 = to its edges)
+  envelopeCount: 25,     // emission rate: how many are in the stream at once (phones show about half)
+  fallSpeed: 0.023,
+  fadeStart: 2.13,       // where along their path envelopes start to fade, in beam lengths (past 1 they leave the beam)
+  fadeLength: 0.81,      // how long the fade takes, in beam lengths
+  sizeMin: 0.28,
+  sizeMax: 0.55,
+  depthNear: 0.3,        // depth range the stream spreads over as it falls
+  depthFar: -8.0,
+  rotation: 0.6,         // amount of gentle turning (0 = none)
   minSpawnDistance: 1.0, // no envelope starts closer than this to another, in widths of the largest envelope
   // the featured envelope, while it is picked out and scanned (then it glides into the story's place)
   pickX: 0,              // horizontal shift, in viewport widths (0 = where the story's deal sits)
-  pickY: 0.52,           // vertical position, from the top of the viewport (0.5 = the middle)
-  pickSize: 1.0,
+  pickY: 0.49,           // vertical position, from the top of the viewport (0.5 = the middle)
+  pickSize: 0.75,
   scanZoom: 1.45,        // the envelope alone is shown this much larger while it is scanned (its cards readable)
-  envelopeGlow: 0.35,    // the gold as a light source: emission, and the glow radiating from its edges
-  glowRadius: 0.8,       // how far the glow reaches out from the envelope's edges
-  lightCast: 0.6,        // how much each envelope lights up the stardust around it
+  envelopeGlow: 1.19,    // the gold as a light source: emission, and the glow radiating from its edges
+  glowRadius: 0.35,      // how far the glow reaches out from the envelope's edges
+  lightCast: 0.0,        // how much each envelope lights up the stardust around it
   stampColor: "#8f1d2c", // Firma's wax seal, wherever it appears
   // stardust
-  dustCount: 260,        // phones show about 40% of these
-  dustSize: 0.028,
-  dustBrightness: 1.5,
+  dustCount: 780,        // phones show about 40% of these
+  dustSize: 0.01,
+  dustBrightness: 2.9,
 };
 export type HeroTune = typeof HERO_DEFAULTS;
 export type TuneKey = keyof HeroTune;
