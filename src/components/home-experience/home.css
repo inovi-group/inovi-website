@@ -14,7 +14,7 @@
 .sx .prod:hover { border-color: var(--tone); transform: translateY(-2px); }
 .sx .prod.tone-isale { --tone: #4593ff; }
 .sx .prod.tone-agro { --tone: #46b876; }
-.sx .prod.tone-firma { --tone: #d9a34a; }
+.sx .prod.tone-fides { --tone: #d9a34a; }
 .sx .prod-tag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tone); }
 .sx .prod b { margin-top: 14px; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
 .sx .prod p { margin: 8px 0 0; flex: 1; font-size: 14px; line-height: 1.6; color: var(--muted); }

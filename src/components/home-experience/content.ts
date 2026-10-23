@@ -8,10 +8,10 @@ export const STEPS: [idx: string, headline: string, what: string, why: string][]
   ["02 · AGRO", "Irrigation decided by the soil.",
     "AGRO's sensors live underground in the root zone. They read the moisture under the field and dose exactly the water the crop needs, with advice on any phone.",
     "35–50% water savings for smallholder farms. No smartphone required."],
-  ["03 · FIRMA", "Every decision, sealed and verifiable.",
-    "FIRMA seals every score, forecast and decision into a tamper-proof register: SHA3-512 hash chains your auditors can check for themselves.",
+  ["03 · FIDES", "Every decision, sealed and verifiable.",
+    "FIDES seals every deal score, forecast and decision into a tamper-proof register: SHA3-512 hash chains your auditors can check for themselves.",
     "Records you can trust, and a month-end report written for you."],
-  ["04 · One governance layer", "Three products. One verifiable layer.",
+  ["04 · FIRMA, the trust layer", "Three products. One verifiable layer.",
     "Each product stands on its own commercial merit, and each runs on the same governance infrastructure: what a system decided is recorded, chained and checkable, inline in under 50 ms.",
     "As AI agents take decisions with real-world consequences, capital and regulators need proof of what happened."],
 ];
@@ -23,13 +23,13 @@ export const PROOFS = [
   { label: "Company", value: "London, UK", detail: "INOVI Group Ltd" },
 ];
 
-export type Product = { href: string; external: boolean; name: string; tagline: string; description: string; icon: LucideIcon; tone: "isale" | "agro" | "firma"; cta: string };
+export type Product = { href: string; external: boolean; name: string; tagline: string; description: string; icon: LucideIcon; tone: "isale" | "agro" | "fides"; cta: string };
 export const PRODUCTS: Product[] = [
   { href: "https://www.isale-ts.uk", external: true, name: "iSale", tagline: "Revenue intelligence", icon: TrendingUp, tone: "isale", cta: "Visit iSale",
     description: "Detects the hidden risks in your commercial deals before signature, from the signals already in your CRM." },
   { href: "/agro/", external: false, name: "AGRO", tagline: "Smart irrigation", icon: Sprout, tone: "agro", cta: "See how it works",
     description: "Underground sensors in the root zone decide when and how much to irrigate. 35–50% less water, advice on any phone." },
-  { href: "/firma/experience/", external: false, name: "FIRMA", tagline: "Trusted records", icon: FileCheck2, tone: "firma", cta: "See how it works",
+  { href: "/fides/", external: false, name: "FIDES", tagline: "Trusted deal records", icon: FileCheck2, tone: "fides", cta: "See how it works",
     description: "A tamper-proof register of every score and decision, verifiable by auditors, with the month-end report done for you." },
 ];
 // also in development, shown as a single line under the products

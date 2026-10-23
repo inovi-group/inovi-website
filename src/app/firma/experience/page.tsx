@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
-import { Experience } from "@/components/firma-experience/Experience";
+import { Redirect } from "@/components/Redirect";
 
+// The deal X-ray page is now FIDES, at /fides.
 export const metadata: Metadata = {
-  title: "FIRMA — Deal records you can trust",
-  description:
-    "A tamper-proof register of every deal score, forecast and decision, verifiable by your auditors. Month-end reports written for you, every record one search away, and drift alerts.",
-  alternates: { canonical: "https://inovigroup.co.uk/firma/experience" },
-  // review build with variant toggles: keep it out of search until it replaces a live page
-  robots: { index: false, follow: false },
+  title: "FIDES — Deal records you can trust",
+  alternates: { canonical: "https://inovigroup.co.uk/fides" },
+  robots: { index: false, follow: true },
 };
 
-export default function FirmaExperiencePage() {
-  return <Experience />;
+export default function FirmaExperienceMoved() {
+  return <Redirect to="/fides/" label="FIDES" />;
 }

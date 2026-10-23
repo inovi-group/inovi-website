@@ -121,7 +121,7 @@ function drawCover(cv: HTMLCanvasElement, m: Month, F: Fonts) {
   c.beginPath(); c.moveTo(60, 150); c.lineTo(60, 60); c.lineTo(150, 60);
   c.moveTo(W - 60, H - 150); c.lineTo(W - 60, H - 60); c.lineTo(W - 150, H - 60); c.stroke();
   c.fillStyle = GOLD; c.fillRect(110, 168, 30, 30);
-  c.fillStyle = "#f2e6cc"; c.font = `700 52px ${F.sans}`; c.fillText("FIRMA", 158, 198);
+  c.fillStyle = "#f2e6cc"; c.font = `700 52px ${F.sans}`; c.fillText("FIDES", 158, 198);
   c.fillStyle = "#94a0b4"; c.font = `600 30px ${F.mono}`; c.fillText("MONTH-END REPORT", 112, 262);
   c.fillStyle = "#e7eaf0"; c.font = `700 112px ${F.sans}`;
   c.fillText("Your month", 104, 470); c.fillText("end, done", 104, 590); c.fillText("for you.", 104, 710);
@@ -150,7 +150,7 @@ function drawSummary(cv: HTMLCanvasElement, m: Month, F: Fonts, big: boolean) {
   c.moveTo(W - 40, H - 110); c.lineTo(W - 40, H - 40); c.lineTo(W - 110, H - 40); c.stroke();
   const L = 76;
   let y = px(96);
-  c.fillStyle = GOLD; c.font = `600 ${px(27)}px ${F.mono}`; c.fillText("FIRMA · MONTH-END REPORT", L, y);
+  c.fillStyle = GOLD; c.font = `600 ${px(27)}px ${F.mono}`; c.fillText("FIDES · MONTH-END REPORT", L, y);
   y += px(62);
   c.fillStyle = "#e7eaf0"; c.font = `700 ${px(54)}px ${F.sans}`; c.fillText("This month, checked.", L, y);
   y += px(130);

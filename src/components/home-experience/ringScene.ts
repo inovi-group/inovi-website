@@ -49,7 +49,7 @@ const RING_Y = -1.1;
 export const STATIONS = [
   { key: "isale", name: "iSALE", tag: "Revenue intelligence", color: "#4593ff", angle: 0 },
   { key: "agro", name: "AGRO", tag: "Smart irrigation", color: "#46b876", angle: TAU / 3 },
-  { key: "firma", name: "FIRMA", tag: "Trusted records", color: "#d9a34a", angle: (2 * TAU) / 3 },
+  { key: "fides", name: "FIDES", tag: "Trusted deal records", color: "#d9a34a", angle: (2 * TAU) / 3 },
 ] as const;
 
 type Fonts = { sans: string; mono: string };

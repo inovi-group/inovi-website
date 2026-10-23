@@ -4,7 +4,7 @@ export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://inovigroup.co.uk";
-  return ["", "/isale", "/agro", "/firma", "/about"].map((path) => ({
+  return ["", "/fides", "/agro", "/isale", "/firma", "/about"].map((path) => ({
     url: `${base}${path}`,
     lastModified: new Date("2026-07-20"),
     changeFrequency: "monthly",

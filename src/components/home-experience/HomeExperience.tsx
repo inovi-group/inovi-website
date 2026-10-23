@@ -105,7 +105,7 @@ export function HomeExperience() {
             <h1>INOVI Group. System-first <em>AI governance.</em></h1>
             <p className="lede">
               Zero-latency (&lt;50ms) inline governance proxy for real-time model verification and EU AI Act
-              compliance. One verifiable layer under every product we build: iSale, AGRO and FIRMA.
+              compliance. FIDES, AGRO and iSale, every one secured by the FIRMA trust layer.
             </p>
             <ul className="values">
               {PROOFS.map((p) => <li key={p.label}><b>{p.value}</b><span>{p.label} · {p.detail}</span></li>)}
