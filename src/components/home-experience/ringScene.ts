@@ -55,6 +55,7 @@ import { homeTune as T } from "./homeTuning";
  */
 const TAU = Math.PI * 2;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const smoothstep = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const FLOOR_Y = -1.05;
 export const PRODUCTS = ["fides", "agro", "isale"] as const;
 
@@ -295,8 +296,12 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
       // object is on the ring, so its face is never seen side-on or from behind
       const wa = a + turntable.rotation.y; // its angle on the ring in the world (0 = the front)
       const wx = Math.sin(wa) * R, wz = Math.cos(wa) * R;
-      s.outer.rotation.y = Math.atan2(camera.position.x - wx, camera.position.z - wz) - turntable.rotation.y;
       const front = Math.max(0, Math.cos(wa)); // 1 when this one is at the front
+      // at the back it rests turned away (toward the ring's centre, or outward), easing round to face the camera
+      // as it comes to the front; capped at 60° (with the sway's 25°, never more than 85°: its back never shows)
+      const away = 1 - smoothstep(0.3, 0.95, front);
+      const back = (Math.max(-60, Math.min(60, T.backAngle)) * Math.PI) / 180 * -Math.sign(wx) * away;
+      s.outer.rotation.y = Math.atan2(camera.position.x - wx, camera.position.z - wz) + back - turntable.rotation.y;
       // on top of facing the camera: a slow sway of yaw and tilt within a small range (capped at ±25°, so the
       // face never turns away or edge-on) and a soft drift, each on its own slow, unrelated rhythm
       const ws = t * T.swaySpeed, cap = (deg: number) => (Math.min(25, Math.max(0, deg)) * Math.PI) / 180;

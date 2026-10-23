@@ -13,6 +13,8 @@ export const HOME_DEFAULTS = {
   swayTilt: 8,          // how far it tilts forward and back (degrees, at most 25)
   swaySpeed: 1.0,       // how fast it sways and drifts (1 = one slow sway every ~30 s)
   drift: 0.08,          // how far it drifts from its place (units)
+  // at the back, an object rests turned away from the camera, and turns to face it as it comes to the front
+  backAngle: 38,        // degrees (+ = turned toward the ring's centre, − = outward; at most ±60)
   // layout
   ringRadius: 2.6,      // radius of the turntable
   objectScale: 1.0,
@@ -48,6 +50,7 @@ export const HOME_PARAMS: { group: string; items: { key: HomeKey; label: string;
     { key: "swayTilt", label: "Tilt (°)", min: 0, max: 25, step: 0.5 },
     { key: "swaySpeed", label: "Sway speed", min: 0.1, max: 3, step: 0.05 },
     { key: "drift", label: "Drift", min: 0, max: 0.4, step: 0.005 },
+    { key: "backAngle", label: "Back angle (°, + to centre)", min: -60, max: 60, step: 1 },
   ] },
   { group: "Layout", items: [
     { key: "ringRadius", label: "Ring radius", min: 1.2, max: 4.5, step: 0.05 },
