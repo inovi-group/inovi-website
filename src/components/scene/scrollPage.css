@@ -149,3 +149,4 @@ body:has(.sx) > footer { position: relative; z-index: 2; background: var(--color
 
 /* accents */
 .sx.ag-exp { --accent: #46b876; --accent-soft: #10281b; }
+.sx.is-exp { --accent: #4593ff; --accent-soft: #12233d; }

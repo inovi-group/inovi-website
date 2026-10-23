@@ -154,7 +154,8 @@ export function createPipeline({ stage, camera, fonts }: { stage: Group; camera:
     const risk = [0.12, 0.34, 0.82, 0.47, 0.18, 0.76, 0.29, 0.55, 0.09, 0.88, 0.22, 0.41, 0.15, 0.71][i % 14];
     const d: Deal = {
       name: `DEAL ${String(i + 1).padStart(2, "0")}`,
-      stage: ["New lead", "Discovery · 9 days", "Proposal · 20 days", "Negotiation · 45 days", "Closing · 6 days"][i % 5],
+      // the risky ones are the deals stalling in negotiation
+      stage: risk > 0.7 ? "Negotiation · 45 days" : ["New lead", "Discovery · 9 days", "Proposal · 20 days", "Closing · 6 days"][i % 4],
       risk, note: risk > 0.7 ? NOTES.high : risk > 0.4 ? NOTES.mid : NOTES.low,
     };
     const cvA = canvasOf(512, 256), cvB = canvasOf(512, 256);
@@ -193,7 +194,7 @@ export function createPipeline({ stage, camera, fonts }: { stage: Group; camera:
     [T.heroYaw, T.heroElevation, T.heroZoom, 0, -0.3, T.heroShiftX],
     [-0.25, 0.32, 1.35, X0 + 0.4, -0.2, 0.21],
     [-0.55, 0.28, 1.45, GATE_X, 0, 0.21],
-    [-0.3, 0.36, 1.3, X0 + 3 * LANE_W, 0, 0.21],
+    [-0.3, 0.36, 1.3, X0 + 3 * LANE_W, 0, 0.24],
   ];
   const v = new Vector3();
 

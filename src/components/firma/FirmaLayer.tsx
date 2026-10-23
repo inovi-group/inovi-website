@@ -14,9 +14,9 @@ const POINTS = [
  */
 export function FirmaLayer({ what }: { what: string }) {
   return (
-    <section className="firma-layer relative z-[2] px-5 py-20" aria-labelledby="firma-layer-h">
+    <section className="firma-layer relative z-[2] py-20" aria-labelledby="firma-layer-h">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(10,13,19,0),rgba(10,13,19,0.95)_90px,rgba(10,13,19,0.95)_calc(100%-90px),rgba(10,13,19,0))]" aria-hidden="true" />
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-6xl px-5">
         <div className="flex items-center gap-3">
           <SealMark size={36} />
           <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-firma">FIRMA · The trust layer</span>

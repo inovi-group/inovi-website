@@ -7,7 +7,7 @@ export const ISALE_DEFAULTS = {
   heroYaw: -0.32,         // the pipeline's turn in the hero
   heroElevation: 0.42,
   heroZoom: 1.0,
-  heroShiftX: 0.2,        // how far right the hero scene sits, in viewport widths
+  heroShiftX: 0.25,       // how far right the hero scene sits, in viewport widths
   drift: 1.0,             // gentle idle turning (0 = still)
   // deals
   cardCount: 14,
