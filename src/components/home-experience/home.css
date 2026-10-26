@@ -73,7 +73,7 @@ html:has(.hm-page) {
   border-top: 2px solid var(--tone); border-radius: var(--radius); background: #131924; color: var(--text); transition: border-color 0.2s, transform 0.2s;
 }
 .prod:hover { border-color: var(--tone); transform: translateY(-2px); }
-.prod.tone-isale { --tone: #4593ff; } .prod.tone-agro { --tone: #46b876; } .prod.tone-fides { --tone: #d9a34a; }
+.prod.tone-isale { --tone: #4593ff; } .prod.tone-agro { --tone: #46b876; } .prod.tone-trust-sensor { --tone: #d9a34a; }
 .prod-tag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tone); }
 .prod b { margin-top: 14px; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
 .prod p { margin: 8px 0 0; flex: 1; font-size: 14px; line-height: 1.6; color: var(--muted); }

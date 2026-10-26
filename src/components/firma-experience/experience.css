@@ -1,4 +1,4 @@
-/* FIDES, the deal X-ray experience (/fides). Scoped to .fx-exp; the scene is always dark. */
+/* Trust Sensor, the deal X-ray experience (/trust-sensor). Scoped to .fx-exp; the scene is always dark. */
 
 /* the 3D scene is designed on the dark palette, so this route keeps it whatever the theme toggle says */
 html:has(.fx-exp) {

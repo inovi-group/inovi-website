@@ -25,7 +25,7 @@ function ProductCard({ p }: { p: Product }) {
 }
 
 /**
- * The home page: the three products (FIDES, AGRO, iSale) as 3D objects on a turntable, then the
+ * The home page: the three products (Trust Sensor, AGRO, iSale) as 3D objects on a turntable, then the
  * proofs, the products, FIRMA (the trust layer under all three), why it matters, and a call to action.
  * ?tune=1 opens the ring's tuning panel.
  */
@@ -46,7 +46,7 @@ export function HomeExperience() {
           <h1>INOVI Group. System-first <em>AI governance.</em></h1>
           <p className="lede">
             Zero-latency (&lt;50ms) inline governance proxy for real-time model verification and EU AI Act compliance.
-            FIDES, AGRO and iSale, every one secured by the FIRMA trust layer.
+            Trust Sensor, AGRO and iSale, every one secured by the FIRMA trust layer.
           </p>
           <div className="cta-block">
             <a href="https://www.isale-ts.uk" target="_blank" rel="noopener noreferrer"
@@ -78,7 +78,7 @@ export function HomeExperience() {
         </a>
       </section>
 
-      <FirmaLayer what="Every Inovi product writes what it sees and decides to FIRMA: Fides its deal scores and decisions, AGRO its readings and doses, iSale its risk scores." />
+      <FirmaLayer what="Every Inovi product writes what it sees and decides to FIRMA: Trust Sensor its deal scores and decisions, AGRO its readings and doses, iSale its risk scores." />
 
       <section className="hm-band" aria-labelledby="hm-why">
         <h2 id="hm-why">Why verifiability matters now</h2>

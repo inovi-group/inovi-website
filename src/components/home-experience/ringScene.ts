@@ -43,7 +43,7 @@ import { cameraPosition, objectYaws, stepRing, turnOf } from "./ringMotion";
 
 /**
  * The home page's product ring: one 3D scene, three objects on a turntable that physically turns.
- * FIDES is the golden envelope with its crimson wax seal; AGRO a block of field in cutaway, a probe glowing in
+ * Trust Sensor is the golden envelope with its crimson wax seal; AGRO a block of field in cutaway, a probe glowing in
  * its root zone and water under the crops; iSale a floating stack of deal cards, the risky one flagged red.
  * At the centre, on the floor, FIRMA: a gold ring through all three and its seal in the middle.
  *
@@ -57,7 +57,7 @@ import { cameraPosition, objectYaws, stepRing, turnOf } from "./ringMotion";
 const TAU = Math.PI * 2;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const FLOOR_Y = -1.05;
-export const PRODUCTS = ["fides", "agro", "isale"] as const;
+export const PRODUCTS = ["trust-sensor", "agro", "isale"] as const;
 
 type Fonts = { sans: string; mono: string };
 const canvasOf = (w: number, h: number) => Object.assign(document.createElement("canvas"), { width: w, height: h });
@@ -144,7 +144,7 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   // ---- the three objects ----
   const slots = PRODUCTS.map(() => { const outer = new Group(), inner = new Group(); outer.add(inner); turntable.add(outer); return { outer, inner }; });
 
-  // FIDES: the Fides hero's own envelope: the same model, gold face, crimson wax seal (pressed), gold light and
+  // Trust Sensor: the Trust Sensor hero's own envelope: the same model, gold face, crimson wax seal (pressed), gold light and
   // rectangular edge glow, with the hero's tuned defaults (HERO_DEFAULTS)
   const faceCv = canvasOf(1024, Math.round((1024 * ENV.h) / ENV.w));
   const face = texOf(faceCv);
@@ -300,7 +300,7 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
       const glow = glows[i];
       if (glow) (glow.material as SpriteMaterial).opacity = (0.12 + 0.28 * front) * T.frontGlow;
     });
-    // FIDES: lit and glowing like the hero's envelopes (in the beam), its edge glow as strong as theirs
+    // Trust Sensor: lit and glowing like the hero's envelopes (in the beam), its edge glow as strong as theirs
     const fFront = Math.max(0, Math.cos(turntable.rotation.y));
     env.setLight(1, HERO_DEFAULTS.envelopeGlow);
     env.g.rotation.x = 0.12 + sp * Math.sin(t * 0.4) * 0.05;

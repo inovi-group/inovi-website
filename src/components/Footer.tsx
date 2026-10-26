@@ -24,7 +24,7 @@ export function Footer() {
           <ul className="mt-3 space-y-2.5 text-sm">
             <li><Link href="/isale" className="text-muted hover:text-text">iSale — Revenue intelligence</Link></li>
             <li><Link href="/agro" className="text-muted hover:text-text">AGRO — Smart irrigation</Link></li>
-            <li><Link href="/fides" className="text-muted hover:text-text">FIDES — Trusted deal records</Link></li>
+            <li><Link href="/trust-sensor" className="text-muted hover:text-text">Trust Sensor — Trusted deal records</Link></li>
             <li><Link href="/firma" className="text-muted hover:text-text">FIRMA — The trust layer</Link></li>
           </ul>
         </div>

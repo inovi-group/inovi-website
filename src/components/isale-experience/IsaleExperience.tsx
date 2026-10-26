@@ -31,7 +31,7 @@ function StepBody({ step: [idx, h, what, why], i }: { step: (typeof STEPS)[numbe
 
 /**
  * /isale: the CRM pipeline behind the page, scrubbed by scroll (hero 0 → story steps 1–3, between section
- * centres), the same natural scroll as the Fides and Agro pages. ?tune=1 opens the scene's tuning panel.
+ * centres), the same natural scroll as the Trust Sensor and Agro pages. ?tune=1 opens the scene's tuning panel.
  */
 export function IsaleExperience() {
   const [ready, setReady] = useState(false);

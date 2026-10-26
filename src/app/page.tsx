@@ -5,7 +5,7 @@ import { HomeExperience } from "@/components/home-experience/HomeExperience";
 export const metadata: Metadata = {
   title: "INOVI Group — System-First AI Governance",
   description:
-    "Zero-latency (<50ms) inline governance proxy for real-time model verification and EU AI Act compliance. FIDES, AGRO and iSale, all secured by the FIRMA trust layer. London, UK.",
+    "Zero-latency (<50ms) inline governance proxy for real-time model verification and EU AI Act compliance. Trust Sensor, AGRO and iSale, all secured by the FIRMA trust layer. London, UK.",
   alternates: { canonical: "https://inovigroup.co.uk" },
 };
 

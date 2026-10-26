@@ -149,7 +149,7 @@ export function drawWaxSeal(cv: HTMLCanvasElement, sans: string) {
 }
 
 // The wax seal on the envelope's flap: stamped down when sealed, cracks in two when tampered. The colours are
-// read every time it is set (the Fides scene changes the seal colour live).
+// read every time it is set (the Trust Sensor scene changes the seal colour live).
 export function makeWaxSeal(tex: Texture, colors: { seal: Color; ok: Color; bad: Color }): Emblem {
   const g = new Group();
   const halves = [0, 1].map((side) => {

@@ -2,7 +2,7 @@ import { computeHash, short, type FirmaRecord } from "./chain";
 
 // The mechanism, in general terms: no vendors, deals, numbers or dates on screen.
 // Scores are win likelihoods. The story can end either way (?outcome=lost|won, or the toggle):
-// the outcome decides which scores called it, what Fides recommends and what is sealed.
+// the outcome decides which scores called it, what Trust Sensor recommends and what is sealed.
 export type Outcome = "lost" | "won";
 export type Verdict = { ok: boolean; text: string };
 export type Score = { kicker: string; label: string; level: number; color: string; source: string; token: string; check: Verdict };
@@ -138,14 +138,14 @@ function monthFor(d: StoryData, outcome: Outcome): Month {
 }
 
 // The story, one step per scene step (1–11): a big headline, what happens, and why it matters.
-// FIDES, Inovi's deal-score product, on the FIRMA trust layer. The theme is trust in the record itself: a tamper-proof register, a month-end report done for you,
+// Trust Sensor, Inovi's deal-score product, on the FIRMA trust layer. The theme is trust in the record itself: a tamper-proof register, a month-end report done for you,
 // everything easy to find, and drift caught before it matters. Which provider is right is a supporting detail.
 export const STEPS: [idx: string, headline: string, what: string, why: string][] = [
   ["01 · The register", "Every deal enters a register you can trust.",
-    "Each deal arrives as a sealed contract carrying the scores your tools and your team put on it. Fides opens one, so everything inside is in plain view, and gives it its place in an append-only register, secured by Firma.",
+    "Each deal arrives as a sealed contract carrying the scores your tools and your team put on it. Trust Sensor opens one, so everything inside is in plain view, and gives it its place in an append-only register, secured by Firma.",
     "Auditors don't have to take your word for it: every entry in the register can be checked."],
   ["01 · Sealed on arrival", "A score lands. It's sealed into the register.",
-    "A revenue tool or your CRM puts a score on the deal. The moment it arrives, Fides snapshots it and seals it as the next entry: hashed, timestamped and linked to the entry before.",
+    "A revenue tool or your CRM puts a score on the deal. The moment it arrives, Trust Sensor snapshots it and seals it as the next entry: hashed, timestamped and linked to the entry before.",
     "Scores get overwritten every night. The register keeps what was actually said, and when."],
   ["01 · Append-only", "Entries are only ever added.",
     "A second source scores the same deal. Its score becomes the next entry, chained to the last, so nothing can be slipped in, reordered or removed after the fact.",
@@ -154,13 +154,13 @@ export const STEPS: [idx: string, headline: string, what: string, why: string][]
     "The deal owner's own call is entered the same way: exactly as it was given, at the time it was given.",
     "No arguing later about what was said, and no quiet edits to a forecast."],
   ["02 · Reality", "Then the deal closes. That's entered too.",
-    "Won, lost or slipped: Fides reads the real outcome and close date from your CRM and seals them into the same register as the scores.",
+    "Won, lost or slipped: Trust Sensor reads the real outcome and close date from your CRM and seals them into the same register as the scores.",
     "Every score and every forecast now has a real result to be measured against, on the record."],
-  ["02 · Drift", "Fides keeps watching, so you don't have to.",
-    "Each sealed score is checked against what really happened. Over time Fides tracks every source's accuracy and calibration, and alerts you when a score, a model or its data starts to drift.",
-    "You can trust your systems without babysitting them: Fides tells you the moment one stops being reliable."],
+  ["02 · Drift", "Trust Sensor keeps watching, so you don't have to.",
+    "Each sealed score is checked against what really happened. Over time Trust Sensor tracks every source's accuracy and calibration, and alerts you when a score, a model or its data starts to drift.",
+    "You can trust your systems without babysitting them: Trust Sensor tells you the moment one stops being reliable."],
   ["02 · Decision", "Decisions are sealed with their evidence.",
-    "When a call is made, such as leaning on the source that has been right on late-stage deals, Fides enters it with the evidence behind it, as the next link in the chain.",
+    "When a call is made, such as leaning on the source that has been right on late-stage deals, Trust Sensor enters it with the evidence behind it, as the next link in the chain.",
     "Months later you can show what was decided, when, and on what basis."],
   ["03 · Audit", "Your auditors can verify it themselves.",
     "Every entry in the Firma register carries a SHA3-512 hash of its contents and points to the hash of the one before. Anyone can recompute them with the open validator and follow the links back to the first entry.",
@@ -168,8 +168,8 @@ export const STEPS: [idx: string, headline: string, what: string, why: string][]
   ["03 · Tamper-evident", "Change one entry and the register shows it.",
     "Edit any record after the fact and its hash changes. The next entry still points to the old one, so the link breaks and the seal cracks, in plain view.",
     "History can't be rewritten in secret, by a vendor, a rep or anyone else."],
-  ["04 · Month end", "Month end. Fides writes the report.",
-    "Zoom out and this deal is one of many in the register. At month end Fides gathers every deal, closed or still open, and builds the report for you.",
+  ["04 · Month end", "Month end. Trust Sensor writes the report.",
+    "Zoom out and this deal is one of many in the register. At month end Trust Sensor gathers every deal, closed or still open, and builds the report for you.",
     "No spreadsheets to assemble, no numbers to chase. And any score, decision or record is one search away."],
   ["04 · The report", "Your month-end report, ready and sealed.",
     "One clean report: how the month's scores held up against reality, what drifted, the decisions taken, and the regimes whose record-keeping it supports. It is sealed as the next entry in the register.",

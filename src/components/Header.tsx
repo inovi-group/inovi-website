@@ -6,7 +6,7 @@ import { Github, Menu, X } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
 const nav = [
-  { href: "/fides", label: "FIDES", external: false },
+  { href: "/trust-sensor", label: "Trust Sensor", external: false },
   { href: "/agro", label: "AGRO", external: false },
   { href: "/isale", label: "iSale", external: false },
   { href: "/firma", label: "FIRMA", external: false },

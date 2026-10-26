@@ -28,7 +28,7 @@ import { beamMaterial, dotTexture, plinthMaterial } from "../agro-experience/soi
 import { isaleTune as T, ISALE_LIMITS } from "./isaleTuning";
 
 /**
- * iSale's pipeline, in the same visual language as the Fides and Agro scenes: a CRM pipeline laid out as five
+ * iSale's pipeline, in the same visual language as the Trust Sensor and Agro scenes: a CRM pipeline laid out as five
  * glass lanes (lead → closed) on a faint grid under a soft column of light. Deal cards come in from the CRM on
  * the left and drift along the pipeline; passing through iSale's scan gate, each one gets its risk score, and
  * the risky ones glow red and lift out of the flow.

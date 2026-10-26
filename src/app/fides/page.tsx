@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
-import { Experience } from "@/components/firma-experience/Experience";
+import { Redirect } from "@/components/Redirect";
 
+// The deal-score product was called FIDES; it is Trust Sensor now, at /trust-sensor.
 export const metadata: Metadata = {
-  title: "FIDES — Deal records you can trust",
-  description:
-    "FIDES keeps a tamper-proof register of every deal score, forecast and decision, verifiable by your auditors and secured by FIRMA. Month-end reports written for you, every record one search away, and drift alerts.",
-  alternates: { canonical: "https://inovigroup.co.uk/fides" },
+  title: "Trust Sensor — Deal records you can trust",
+  alternates: { canonical: "https://inovigroup.co.uk/trust-sensor" },
+  robots: { index: false, follow: true },
 };
 
-// FIDES (Latin: trust), Inovi's deal-score product. The page's components still live in firma-experience/.
-export default function FidesPage() {
-  return <Experience />;
+export default function FidesMoved() {
+  return <Redirect to="/trust-sensor/" label="Trust Sensor" />;
 }

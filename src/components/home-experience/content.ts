@@ -7,9 +7,9 @@ export const PROOFS = [
   { label: "Company", value: "London, UK", detail: "INOVI Group Ltd" },
 ];
 
-export type Product = { href: string; external: boolean; name: string; tagline: string; description: string; icon: LucideIcon; tone: "isale" | "agro" | "fides"; cta: string };
+export type Product = { href: string; external: boolean; name: string; tagline: string; description: string; icon: LucideIcon; tone: "isale" | "agro" | "trust-sensor"; cta: string };
 export const PRODUCTS: Product[] = [
-  { href: "/fides/", external: false, name: "FIDES", tagline: "Trusted deal records", icon: FileCheck2, tone: "fides", cta: "See how it works",
+  { href: "/trust-sensor/", external: false, name: "Trust Sensor", tagline: "Trusted deal records", icon: FileCheck2, tone: "trust-sensor", cta: "See how it works",
     description: "A tamper-proof register of every deal score and decision, verifiable by auditors, with the month-end report done for you." },
   { href: "/agro/", external: false, name: "AGRO", tagline: "Smart irrigation", icon: Sprout, tone: "agro", cta: "See how it works",
     description: "Underground sensors in the root zone decide when and how much to irrigate. 35–50% less water, advice on any phone." },

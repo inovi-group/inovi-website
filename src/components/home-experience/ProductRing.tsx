@@ -12,9 +12,9 @@ import type { RingApi } from "./RingCanvas";
 // WebGL only in the browser
 const RingCanvas = dynamic(() => import("./RingCanvas"), { ssr: false });
 
-// in the ring's order (FIDES first): see PRODUCTS in ringScene.ts
+// in the ring's order (Trust Sensor first): see PRODUCTS in ringScene.ts
 export const SLIDES = [
-  { key: "fides", name: "FIDES", tagline: "Trusted deal records", href: "/fides/", accent: "#d9a34a" },
+  { key: "trust-sensor", name: "Trust Sensor", tagline: "Trusted deal records", href: "/trust-sensor/", accent: "#d9a34a" },
   { key: "agro", name: "AGRO", tagline: "Smart irrigation", href: "/agro/", accent: "#46b876" },
   { key: "isale", name: "iSale", tagline: "Revenue intelligence", href: "/isale/", accent: "#4593ff" },
 ] as const;

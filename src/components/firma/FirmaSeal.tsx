@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-// FIRMA's wax seal, drawn small: the same crimson as the seals on the Fides envelopes, a gold ring, the F.
+// FIRMA's wax seal, drawn small: the same crimson as the seals on the Trust Sensor envelopes, a gold ring, the F.
 function SealMark({ size = 30 }: { size?: number }) {
   const blob = Array.from({ length: 48 }, (_, i) => {
     const t = (i / 48) * Math.PI * 2, r = 14 + Math.sin(t * 9) * 0.6 + Math.sin(t * 5 + 1) * 0.4;

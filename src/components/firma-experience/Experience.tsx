@@ -42,7 +42,7 @@ function readConfig(): Config {
   };
 }
 
-const MAIL = "mailto:contact@inovigroup.co.uk?subject=FIDES%20pilot";
+const MAIL = "mailto:contact@inovigroup.co.uk?subject=Trust%20Sensor%20pilot";
 function Ctas() {
   return (
     <div className="cta-block">
@@ -81,7 +81,7 @@ function TrustFeatures() {
       <div>
         <span className="idx">05 · Everything you can trust</span>
         <h2 id="h-trust">Systems you don&apos;t have to watch.</h2>
-        <p className="trust-lede">The register is the foundation. On top of it, Fides keeps checking your scores, models and forecasts against reality, so you hear about a problem before it reaches a decision.</p>
+        <p className="trust-lede">The register is the foundation. On top of it, Trust Sensor keeps checking your scores, models and forecasts against reality, so you hear about a problem before it reaches a decision.</p>
         <ul className="trust-grid">
           {list.map((f) => (
             <li key={f.title} className={f.pillar ? "pillar" : undefined}>
@@ -211,10 +211,10 @@ export function Experience() {
       <div className="fx-content">
         <section className="section hero calm" id="top">
           <div className="hero-copy">
-            <Stamp tone="firma">FIDES · Trusted deal records</Stamp>
+            <Stamp tone="firma">Trust Sensor · Trusted deal records</Stamp>
             <h1>Deal records you can <em>trust.</em></h1>
             <p className="lede">
-              Fides seals every score, forecast and decision into a tamper-proof register your auditors can verify. It
+              Trust Sensor seals every score, forecast and decision into a tamper-proof register your auditors can verify. It
               writes your month-end report for you, keeps every record one search away, and tells you when a score,
               a model or its data starts to drift.
             </p>
@@ -250,11 +250,11 @@ export function Experience() {
 
         <TrustFeatures />
 
-        <FirmaLayer what="Every deal score, forecast, outcome and decision Fides sees is written to FIRMA, and so is every month-end report." />
+        <FirmaLayer what="Every deal score, forecast, outcome and decision Trust Sensor sees is written to FIRMA, and so is every month-end report." />
 
         <section className="section calm close" id="summary" aria-labelledby="h-end">
           <div className="step">
-            <span className="idx">FIDES · Trusted deal records</span>
+            <span className="idx">Trust Sensor · Trusted deal records</span>
             <h2 id="h-end">Trust the record. Skip the month-end scramble.</h2>
             <p>A tamper-proof register of every score, outcome and decision, a month-end report written for you, and alerts the moment something drifts.</p>
             <Ctas />

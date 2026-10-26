@@ -14,7 +14,7 @@ import { Stamp } from "@/components/Stamp";
 export const metadata: Metadata = {
   title: "FIRMA — The trust layer under every Inovi product",
   description:
-    "FIRMA is the verifiable, tamper-proof record layer behind FIDES, AGRO and iSale, and an open specification (v2.0) for tamper-evident records: SHA3-512 hash chains, Ed25519 signatures, GPL-3.0.",
+    "FIRMA is the verifiable, tamper-proof record layer behind Trust Sensor, AGRO and iSale, and an open specification (v2.0) for tamper-evident records: SHA3-512 hash chains, Ed25519 signatures, GPL-3.0.",
   alternates: { canonical: "https://inovigroup.co.uk/firma" },
 };
 
@@ -69,7 +69,7 @@ const resources = [
 ];
 
 const securedProducts = [
-  { name: "FIDES", href: "/fides/", tagline: "Trusted deal records", tone: "text-firma",
+  { name: "Trust Sensor", href: "/trust-sensor/", tagline: "Trusted deal records", tone: "text-firma",
     text: "Every deal score, forecast and decision, sealed into a register your auditors can verify, with the month-end report done for you." },
   { name: "AGRO", href: "/agro/", tagline: "Smart irrigation", tone: "text-agro",
     text: "Every sensor reading and irrigation decision on record, so water savings can be proven to partners and funders." },
@@ -93,7 +93,7 @@ export default function FirmaPage() {
           </Reveal>
           <Reveal delay={0.16}>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted">
-              FIRMA is the verifiable, tamper-proof record behind FIDES, AGRO and
+              FIRMA is the verifiable, tamper-proof record behind Trust Sensor, AGRO and
               iSale, and an open specification anyone can implement. Every record
               is hashed with SHA3-512, signed with Ed25519, and chained to its
               predecessor — so integrity is a property you verify, not a claim you

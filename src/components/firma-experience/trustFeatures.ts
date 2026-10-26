@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 /**
- * The "everything you can trust" cards on the Fides page, after the scroll story.
+ * The "everything you can trust" cards on the Trust Sensor page, after the scroll story.
  * One entry per card, shown in this order. To drop a card, set `on: false` (or delete the entry);
  * the grid reflows by itself. `pillar: true` marks the four lead messages: they get the gold top edge.
  */
@@ -31,13 +31,13 @@ export const TRUST_FEATURES: TrustFeature[] = [
   { on: true, pillar: true, icon: ShieldCheck, tag: "Audit", title: "A tamper-proof register",
     text: "Every score, forecast, outcome and decision sealed as it happens, in an append-only register your auditors can verify themselves." },
   { on: true, pillar: true, icon: FileText, tag: "Month end", title: "The month-end report, done for you",
-    text: "Fides gathers the month from the register and writes the report: what held up, what drifted, what was decided. Sealed and ready to share." },
+    text: "Trust Sensor gathers the month from the register and writes the report: what held up, what drifted, what was decided. Sealed and ready to share." },
   { on: true, pillar: true, icon: Search, tag: "Access", title: "Anything, one search away",
     text: "Find any score, decision or record by deal, source, owner or date, with the evidence beside it. No digging through tools or exports." },
   { on: true, pillar: true, icon: Radar, tag: "Drift", title: "Drift detection",
-    text: "Fides watches your scores, models and their data over time, and alerts you when something starts to move. Nothing to babysit." },
+    text: "Trust Sensor watches your scores, models and their data over time, and alerts you when something starts to move. Nothing to babysit." },
 
-  // ---- more ways Fides keeps your systems trustworthy (keep the ones you want) ----
+  // ---- more ways Trust Sensor keeps your systems trustworthy (keep the ones you want) ----
   { on: true, icon: Target, tag: "Calibration", title: "Predicted vs. real outcomes",
     text: "Does a 70% score win 70% of the time? Every source's calibration, measured against the deals that actually closed." },
   { on: true, icon: LineChart, tag: "Accuracy", title: "Accuracy over time",

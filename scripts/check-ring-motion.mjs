@@ -50,7 +50,7 @@ function run(name, dir, legacy) {
       if (!legacy && logArg > 0) rows.push([name, rows.length, t.toFixed(4), rot.toFixed(5), ...y.map((v) => deg(v).toFixed(3))].join(","));
       if (prev) y.forEach((v, i) => {
         const step = Math.abs(deg(M.wrap(v - prev[i])));
-        if (step > worst.step) worst = { step, object: ["FIDES", "AGRO", "iSale"][i], t: +t.toFixed(3), rot: +rot.toFixed(3) };
+        if (step > worst.step) worst = { step, object: ["Trust Sensor", "AGRO", "iSale"][i], t: +t.toFixed(3), rot: +rot.toFixed(3) };
       });
       prev = y;
     }
