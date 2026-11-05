@@ -1,0 +1,28 @@
+# INOVI Group
+
+> INOVI Group Ltd (London, UK) builds two products, iSale and AGRO, on one platform, FIRMA. iSale keeps sales teams aligned with a company's strategy; AGRO is smart irrigation for small farms; FIRMA does data analysis on the customer's own data and keeps a tamper-proof record anyone can verify. The site is in English and French.
+
+Names: iSale, AGRO, FIRMA, INOVI Group (legal name INOVI Group Ltd). FIRMA is a platform, not a separate product; iSale and AGRO are the products. Contact: contact@inovigroup.co.uk.
+
+## Products
+
+- [iSale](https://inovigroup.co.uk/isale/): keeps every deal on strategy. Administrators set the global sales strategy; iSale checks customers and deals against it, warns reps before they take on customers likely to go bad, flags deals that don't fit the strategy before they close, goes over past sales to find patterns (and suggests patterns behind bad customers as new strategy rules for administrators to approve), and writes the reports. Works with the CRM a team already uses. Every signal, flag, outcome and decision is kept on FIRMA's tamper-proof record. Web app: https://www.isale-ts.uk
+- [AGRO](https://inovigroup.co.uk/agro/): smart irrigation for smallholder farmers. Underground sensors measure soil moisture in the root zone; AGRO decides when and how much to irrigate and sends advice as a text message to any phone (no smartphone or data plan needed). Readings, decisions and doses are kept on FIRMA's record.
+
+## Platform
+
+- [FIRMA](https://inovigroup.co.uk/firma/): the platform under iSale and AGRO. It finds patterns in the customer's data (data science on their own systems), checks what the products see against rules the customer sets, and keeps a tamper-proof, append-only record: every record is hashed with SHA3-512, signed with Ed25519 and chained to the one before. Findings are suggestions with their evidence; people decide what to act on.
+- [FIRMA specification v2.0](https://github.com/inovi-group/firma-spec): open specification and Python reference validator, GPL-3.0.
+- [Live demo](https://inovi-group.github.io/firma-spec/demo/): interactive hash-chain demonstration.
+
+## Company
+
+- [About](https://inovigroup.co.uk/about/): INOVI Group Ltd, London, United Kingdom. Leadership: Bachir Bouabdellah Belbia (CEO & Founder), Samir Founou (CTO), Diana Jarche (COO), Mohamed Bouabdelli (Director of Communications).
+
+## Français
+
+- [Accueil](https://inovigroup.co.uk/fr/)
+- [iSale](https://inovigroup.co.uk/fr/isale/): la vente alignée sur la stratégie.
+- [AGRO](https://inovigroup.co.uk/fr/agro/): l'irrigation intelligente pour les petites exploitations.
+- [FIRMA](https://inovigroup.co.uk/fr/firma/): la plateforme d'iSale et d'AGRO.
+- [À propos](https://inovigroup.co.uk/fr/a-propos/)

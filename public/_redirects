@@ -1,0 +1,11 @@
+# Real 301s for hosts that read this file (Cloudflare Pages, Netlify). Vercel uses vercel.json instead.
+# Earlier addresses of the deal product, now iSale.
+/trust-sensor        /isale/  301
+/trust-sensor/       /isale/  301
+/fides               /isale/  301
+/fides/              /isale/  301
+/firma/experience    /isale/  301
+/firma/experience/   /isale/  301
+# French "about" under its English slug
+/fr/about            /fr/a-propos/  301
+/fr/about/           /fr/a-propos/  301

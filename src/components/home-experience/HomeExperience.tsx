@@ -5,31 +5,21 @@ import { ArrowRight, PlayCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Stamp } from "@/components/Stamp";
 import { FirmaLayer } from "@/components/firma/FirmaLayer";
-import { TunePanel } from "../firma-experience/TunePanel";
+import { SealMark } from "@/components/firma/FirmaSeal";
+import { DEMO, href, MAIL, type Lang } from "@/i18n";
+import { TunePanel } from "../isale-experience/TunePanel";
 import { HOME_DEFAULTS, HOME_PARAMS, HOME_STORE, homeTune } from "./homeTuning";
-import { ENERGY, PRINCIPLES, PRODUCTS, PROOFS, type Product } from "./content";
+import { homeCopy } from "./content";
 import { ProductRing } from "./ProductRing";
 import "./home.css";
 
-const DEMO = "https://inovi-group.github.io/firma-spec/demo/";
-
-function ProductCard({ p }: { p: Product }) {
-  return (
-    <Link href={p.href} className={`prod tone-${p.tone}`}>
-      <span className="prod-tag"><p.icon size={16} aria-hidden="true" />{p.tagline}</span>
-      <b>{p.name}</b>
-      <p>{p.description}</p>
-      <span className="prod-cta">{p.cta} <ArrowRight size={14} aria-hidden="true" /></span>
-    </Link>
-  );
-}
-
 /**
- * The home page: the three products (Trust Sensor, AGRO, iSale) as 3D objects on a turntable, then the
- * proofs, the products, FIRMA (the trust layer under all three), why it matters, and a call to action.
+ * The home page: the two products (iSale, AGRO) as 3D objects on a turntable around FIRMA's seal, then the
+ * proofs, the products, FIRMA (the platform under both), why it matters, and a call to action.
  * ?tune=1 opens the ring's tuning panel.
  */
-export function HomeExperience() {
+export function HomeExperience({ lang = "en" }: { lang?: Lang }) {
+  const c = homeCopy(lang);
   const [tune, setTune] = useState(false);
   useEffect(() => {
     const on = new URLSearchParams(window.location.search).get("tune") === "1";
@@ -42,64 +32,70 @@ export function HomeExperience() {
     <div className="hm-page">
       <section className="hm-hero" id="top">
         <div className="hm-copy">
-          <Stamp>Trust infrastructure · London, UK</Stamp>
-          <h1>INOVI Group. System-first <em>AI governance.</em></h1>
-          <p className="lede">
-            Zero-latency (&lt;50ms) inline governance proxy for real-time model verification and EU AI Act compliance.
-            Trust Sensor, AGRO and iSale, every one secured by the FIRMA trust layer.
-          </p>
+          <Stamp>{c.stamp}</Stamp>
+          <h1>{c.h1[0]}<em>{c.h1[1]}</em></h1>
+          <p className="lede">{c.lede}</p>
           <div className="cta-block">
-            <a href="https://www.isale-ts.uk" target="_blank" rel="noopener noreferrer"
+            <Link href={href(lang, "isale")}
               className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90">
-              Request a demo <ArrowRight size={16} />
-            </a>
+              {c.ctaPrimary} <ArrowRight size={16} />
+            </Link>
             <a href={DEMO} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-lg border border-line bg-card px-5 py-3 text-sm font-semibold text-text transition-colors hover:border-accent">
-              <PlayCircle size={16} /> Launch the live demo
+              <PlayCircle size={16} /> {c.ctaDemo}
             </a>
           </div>
         </div>
-        <ProductRing />
+        <ProductRing lang={lang} />
       </section>
 
-      <section className="hm-proofs" aria-label="Proof points">
+      <section className="hm-proofs" aria-label={c.proofsLabel}>
         <ul>
-          {PROOFS.map((p) => <li key={p.label}><span>{p.label}</span><b>{p.value}</b><i>{p.detail}</i></li>)}
+          {c.proofs.map(([label, value, detail]) => <li key={label}><span>{label}</span><b>{value}</b><i>{detail}</i></li>)}
         </ul>
       </section>
 
       <section className="hm-band" aria-labelledby="hm-products">
-        <span className="idx">The products</span>
-        <h2 id="hm-products">Three products. One trust layer.</h2>
-        <p className="band-lede">Each product stands on its own commercial merit, and each one writes what it sees and decides to FIRMA, the same verifiable record.</p>
-        <div className="prod-grid">{PRODUCTS.map((p) => <ProductCard key={p.name} p={p} />)}</div>
-        <a className="energy" href={ENERGY.href}>
-          <ENERGY.icon size={15} aria-hidden="true" /><b>{ENERGY.name}</b><span>{ENERGY.text}</span><i>Get in touch <ArrowRight size={13} aria-hidden="true" /></i>
-        </a>
+        <span className="idx">{c.productsIdx}</span>
+        <h2 id="hm-products">{c.productsTitle}</h2>
+        <p className="band-lede">{c.productsLede}</p>
+        <div className="prod-grid two">
+          {c.cards.map((p) => (
+            <Link key={p.key} href={href(lang, p.key)} className={`prod tone-${p.tone}`}>
+              <span className="prod-tag"><p.icon size={16} aria-hidden="true" />{p.tagline}</span>
+              <b>{p.name}</b>
+              <p>{p.description}</p>
+              <span className="prod-cta">{p.cta} <ArrowRight size={14} aria-hidden="true" /></span>
+            </Link>
+          ))}
+        </div>
+        <Link className="energy platform" href={href(lang, "firma")}>
+          <SealMark size={20} /><b>{c.platformLine[0]}</b><span>{c.platformLine[1]}</span><i>{c.platformLine[2]} <ArrowRight size={13} aria-hidden="true" /></i>
+        </Link>
       </section>
 
-      <FirmaLayer what="Every Inovi product writes what it sees and decides to FIRMA: Trust Sensor its deal scores and decisions, AGRO its readings and doses, iSale its risk scores." />
+      <FirmaLayer what={c.layer} lang={lang} />
 
       <section className="hm-band" aria-labelledby="hm-why">
-        <h2 id="hm-why">Why verifiability matters now</h2>
+        <h2 id="hm-why">{c.whyTitle}</h2>
         <ul className="principles">
-          {PRINCIPLES.map((p) => (
+          {c.principles.map((p) => (
             <li key={p.title}><p.icon size={20} className="text-accent" aria-hidden="true" /><b>{p.title}</b><p>{p.text}</p></li>
           ))}
         </ul>
       </section>
 
       <section className="hm-band hm-cta" aria-labelledby="hm-end">
-        <h2 id="hm-end">Building with verifiable AI?</h2>
-        <p>We work with commercial teams, agritech partners and technical programmes. Try the live demo or get in touch.</p>
+        <h2 id="hm-end">{c.endTitle}</h2>
+        <p>{c.endText}</p>
         <div className="cta-block">
           <a href={DEMO} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90">
-            Launch the live demo
+            {c.endDemo}
           </a>
-          <a href="mailto:contact@inovigroup.co.uk"
+          <a href={`mailto:${MAIL}`}
             className="inline-flex items-center gap-2 rounded-lg border border-line px-5 py-3 text-sm font-semibold text-text transition-colors hover:border-accent">
-            Get in touch
+            {c.endContact}
           </a>
         </div>
       </section>

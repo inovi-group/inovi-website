@@ -6,34 +6,37 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Stamp } from "@/components/Stamp";
 import { FirmaLayer } from "@/components/firma/FirmaLayer";
 import { FirmaSeal } from "@/components/firma/FirmaSeal";
-import { mountFlow } from "../firma-experience/flow";
-import { pageTop } from "../firma-experience/listen";
-import { TunePanel } from "../firma-experience/TunePanel";
+import { mountFlow } from "../isale-experience/flow";
+import { pageTop } from "../isale-experience/listen";
+import { TunePanel } from "../isale-experience/TunePanel";
 import { AGRO_DEFAULTS, AGRO_PARAMS, AGRO_STORE, agroTune } from "./agroTuning";
-import { FEATURES, STATS, STEPS } from "./content";
+import { agroCopy, FEATURE_ICONS, setAgroSceneLang, STEP_COUNT, type Step } from "./content";
+import { MAIL, type Lang } from "@/i18n";
+import { ui } from "@/i18n/ui";
+import { Faq } from "@/components/Faq";
 import "../scene/scrollPage.css";
 
 // WebGL only in the browser: the static export ships the page text, the scene mounts on the client.
 const AgroScene = dynamic(() => import("./AgroScene"), { ssr: false });
 
-const MAIL = "mailto:contact@inovigroup.co.uk?subject=AGRO%20pilot%20partnership";
-
-function StepBody({ step: [idx, h, what, why], i }: { step: (typeof STEPS)[number]; i: number }) {
+function StepBody({ step: [idx, h, what, why], i, why: whyLabel }: { step: Step; i: number; why: string }) {
   return (
     <div className="big-step">
       <span className="idx">{idx}</span>
       <h2 id={`ag-${i + 1}`}>{h}</h2>
       <p className="what">{what}</p>
-      <p className="why"><b>Why it matters</b>{why}</p>
+      <p className="why"><b>{whyLabel}</b>{why}</p>
     </div>
   );
 }
 
 /**
  * /agro: the soil cutaway behind the page, scrubbed by scroll (hero 0 → story steps 1–7, between section
- * centres), the same natural scroll as the Firma page. ?tune=1 opens the scene's tuning panel.
+ * centres), the same natural scroll as the iSale page. ?tune=1 opens the scene's tuning panel.
  */
-export function AgroExperience() {
+export function AgroExperience({ lang = "en" }: { lang?: Lang }) {
+  const t = agroCopy(lang), why = ui(lang).whyItMatters;
+  const mail = `mailto:${MAIL}?subject=${encodeURIComponent(t.mailSubject)}`;
   const [ready, setReady] = useState(false);
   const [tune, setTune] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -41,10 +44,11 @@ export function AgroExperience() {
   const reduceMotion = useRef<MediaQueryList | null>(null);
 
   useEffect(() => {
+    setAgroSceneLang(lang); // the scene's canvas words, before it mounts
     reduceMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)");
     setTune(new URLSearchParams(window.location.search).get("tune") === "1");
     setReady(true);
-  }, []);
+  }, [lang]);
 
   // the site's smooth scroll would fight the scrubbed scene
   useEffect(() => {
@@ -64,9 +68,9 @@ export function AgroExperience() {
       const c = window.scrollY + window.innerHeight / 2;
       if (c <= centers[0]) return 0;
       for (let i = 1; i < centers.length; i++) {
-        if (c <= centers[i]) return Math.min(STEPS.length, i - 1 + (c - centers[i - 1]) / (centers[i] - centers[i - 1]));
+        if (c <= centers[i]) return Math.min(STEP_COUNT, i - 1 + (c - centers[i - 1]) / (centers[i] - centers[i - 1]));
       }
-      return STEPS.length;
+      return STEP_COUNT;
     };
     window.addEventListener("resize", measure);
     document.fonts?.ready.then(measure);
@@ -86,53 +90,52 @@ export function AgroExperience() {
       <div className="sx-content">
         <section className="section hero" id="top">
           <div className="hero-copy">
-            <Stamp tone="agro">AGRO · Smart irrigation</Stamp>
-            <h1>Smart irrigation for the farmers the industry <em>forgot.</em></h1>
-            <p className="lede">
-              AGRO&apos;s sensors live underground, in the root zone. They read what&apos;s happening under the dirt and
-              dose exactly the water the crop needs, with advice on any phone. Because the families who grow a third
-              of the world&apos;s food shouldn&apos;t need a data plan to save water.
-            </p>
+            <Stamp tone="agro">{t.stamp}</Stamp>
+            <h1>{t.h1[0]}<em>{t.h1[1]}</em></h1>
+            <p className="lede">{t.lede}</p>
             <ul className="values">
-              {STATS.map((s) => <li key={s.label}><b>{s.value}</b><span>{s.label}</span></li>)}
+              {t.stats.map(([value, label]) => <li key={label}><b>{value}</b><span>{label}</span></li>)}
             </ul>
             <div className="cta-block">
-              <a href={MAIL} className="inline-flex items-center gap-2 rounded-lg bg-agro px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90">
-                Partner on a pilot <ArrowRight size={16} />
+              <a href={mail} className="inline-flex items-center gap-2 rounded-lg bg-agro px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90">
+                {t.cta} <ArrowRight size={16} />
               </a>
             </div>
-            <FirmaSeal className="mt-5" />
-            <div className="scroll-cue">Scroll: under the surface</div>
+            <FirmaSeal className="mt-5" lang={lang} />
+            <div className="scroll-cue">{t.scrollCue}</div>
           </div>
         </section>
 
-        {STEPS.map((st, i) => (
-          <section key={i} className="section flow-step" aria-labelledby={`ag-${i + 1}`}><StepBody step={st} i={i} /></section>
+        {t.steps.map((st, i) => (
+          <section key={i} className="section flow-step" aria-labelledby={`ag-${i + 1}`}><StepBody step={st} i={i} why={why} /></section>
         ))}
 
         <section className="section features" aria-labelledby="ag-feat">
           <div>
-            <span className="idx">04 · Why it works</span>
-            <h2 id="ag-feat">Technology that meets farmers where they are.</h2>
-            <p className="feat-lede">Most agritech assumes a smartphone, a stable connection, and time to learn a dashboard. AGRO assumes none of that.</p>
+            <span className="idx">{t.featIdx}</span>
+            <h2 id="ag-feat">{t.featTitle}</h2>
+            <p className="feat-lede">{t.featLede}</p>
             <ul className="feat-grid">
-              {FEATURES.map((f) => (
-                <li key={f.title}><f.icon size={20} className="text-agro" aria-hidden="true" /><b>{f.title}</b><p>{f.text}</p></li>
-              ))}
+              {t.features.map(([title, text], i) => {
+                const Icon = FEATURE_ICONS[i];
+                return <li key={title}><Icon size={20} className="text-agro" aria-hidden="true" /><b>{title}</b><p>{text}</p></li>;
+              })}
             </ul>
           </div>
         </section>
 
-        <FirmaLayer what="Every sensor reading, irrigation decision and dose AGRO makes is written to FIRMA, so water savings can be proven to partners, cooperatives and funders." />
+        <FirmaLayer what={t.layer} lang={lang} />
+
+        <Faq title={ui(lang).faq} items={t.faq} tone="agro" className="faq-dark" />
 
         <section className="section close" aria-labelledby="ag-end">
           <div className="step">
-            <span className="idx">AGRO · Smart irrigation</span>
-            <h2 id="ag-end">Working on water, food security, or climate resilience?</h2>
-            <p>We partner with agritech organisations, cooperatives and impact programmes to bring AGRO to the field. Pilots are designed around real farms and measured on real outcomes.</p>
+            <span className="idx">{t.endIdx}</span>
+            <h2 id="ag-end">{t.endTitle}</h2>
+            <p>{t.endText}</p>
             <div className="cta-block">
-              <a href={MAIL} className="inline-flex items-center gap-2 rounded-lg bg-agro px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90">
-                Start the conversation <ArrowRight size={16} />
+              <a href={mail} className="inline-flex items-center gap-2 rounded-lg bg-agro px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90">
+                {t.ctaEnd} <ArrowRight size={16} />
               </a>
             </div>
           </div>

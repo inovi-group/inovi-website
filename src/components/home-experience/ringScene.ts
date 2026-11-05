@@ -5,7 +5,6 @@ import {
   CanvasTexture,
   CircleGeometry,
   Color,
-  DoubleSide,
   DepthTexture,
   EdgesGeometry,
   Group,
@@ -33,19 +32,19 @@ import {
 } from "three";
 import { AGRO_DEFAULTS } from "../agro-experience/agroTuning";
 import { beamMaterial, dotTexture, plinthMaterial, plotKit } from "../agro-experience/soilScene";
-import { ENV, drawEnvelopeFace, drawWaxSeal, makeEnvelope, makeWaxSeal } from "../firma-experience/envelope";
-import { rectGlowMaterial } from "../firma-experience/heroScene";
-import { HERO_DEFAULTS } from "../firma-experience/heroTuning";
-import { drawDeal } from "../isale-experience/pipelineScene";
+import { ENV, drawEnvelopeFace, drawWaxSeal, makeEnvelope, makeWaxSeal } from "../isale-experience/envelope";
+import { rectGlowMaterial } from "../isale-experience/heroScene";
+import { HERO_DEFAULTS } from "../isale-experience/heroTuning";
 import { DepthOfFieldEffect, EffectPass } from "postprocessing";
 import { homeTune as T } from "./homeTuning";
 import { cameraPosition, objectYaws, stepRing, turnOf } from "./ringMotion";
 
 /**
- * The home page's product ring: one 3D scene, three objects on a turntable that physically turns.
- * Trust Sensor is the golden envelope with its crimson wax seal; AGRO a block of field in cutaway, a probe glowing in
- * its root zone and water under the crops; iSale a floating stack of deal cards, the risky one flagged red.
- * At the centre, on the floor, FIRMA: a gold ring through all three and its seal in the middle.
+ * The home page's product ring: one 3D scene, the two products on a turntable that physically turns.
+ * iSale is the golden envelope with its crimson wax seal; AGRO a block of field in cutaway, a probe glowing in
+ * its root zone and water under the crops. At the centre, on the floor, FIRMA, the platform both are built on:
+ * a gold ring through both and its seal in the middle. The products sit a third of a turn apart (slots 0 and 1),
+ * so the one at the back stays in view beside the front one; the ring swings between them.
  *
  * The object at the front is close, large, sharp and lit (a soft column of light falls on it). The two at the
  * back recede in one of two ways (homeTune.depthMode):
@@ -57,7 +56,7 @@ import { cameraPosition, objectYaws, stepRing, turnOf } from "./ringMotion";
 const TAU = Math.PI * 2;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const FLOOR_Y = -1.05;
-export const PRODUCTS = ["trust-sensor", "agro", "isale"] as const;
+export const PRODUCTS = ["isale", "agro"] as const;
 
 type Fonts = { sans: string; mono: string };
 const canvasOf = (w: number, h: number) => Object.assign(document.createElement("canvas"), { width: w, height: h });
@@ -141,10 +140,10 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   pool.rotation.x = -Math.PI / 2;
   scene.add(pool);
 
-  // ---- the three objects ----
+  // ---- the two products ----
   const slots = PRODUCTS.map(() => { const outer = new Group(), inner = new Group(); outer.add(inner); turntable.add(outer); return { outer, inner }; });
 
-  // Trust Sensor: the Trust Sensor hero's own envelope: the same model, gold face, crimson wax seal (pressed), gold light and
+  // iSale: the iSale hero's own envelope: the same model, gold face, crimson wax seal (pressed), gold light and
   // rectangular edge glow, with the hero's tuned defaults (HERO_DEFAULTS)
   const faceCv = canvasOf(1024, Math.round((1024 * ENV.h) / ENV.w));
   const face = texOf(faceCv);
@@ -203,35 +202,9 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   plotGlow.scale.set(3.2, 2.2, 1); plotGlow.position.set(0, -0.3, -0.4);
   slots[1].inner.add(plotGlow, plot);
 
-  // iSale: a floating stack of deal cards, the risky one flagged red, a scan line passing through
-  const deals = [
-    { name: "DEAL 01", stage: "Proposal · 12 days", risk: 0.18, note: "ON TRACK" },
-    { name: "DEAL 02", stage: "Discovery · 9 days", risk: 0.34, note: "ON TRACK" },
-    { name: "DEAL 03", stage: "Negotiation · 45 days", risk: 0.82, note: "STALLING · NO CHAMPION" },
-    { name: "DEAL 04", stage: "Proposal · 20 days", risk: 0.47, note: "DISCOUNT PRESSURE" },
-  ];
-  const cardGeo = new PlaneGeometry(1.5, 0.75);
-  const cards = deals.map((d, k) => {
-    const cv = canvasOf(512, 256);
-    const m = new Mesh(cardGeo, new MeshBasicMaterial({ map: texOf(cv), alphaTest: 0.5, side: DoubleSide }) /* opaque: no card shows through another */);
-    m.position.set((k - 1.5) * 0.12, (1.5 - k) * 0.3 - 0.05, (k - 1.5) * -0.28);
-    m.rotation.set(-0.12, 0.18, 0);
-    slots[2].inner.add(m);
-    return { m, cv, d, y0: m.position.y };
-  });
-  const flag = new Sprite(new SpriteMaterial({ map: dot, color: "#ef5a4c", transparent: true, blending: AdditiveBlending, depthWrite: false }));
-  flag.scale.set(2.4, 1.4, 1);
-  slots[2].inner.add(flag);
-  const scan = new Mesh(new PlaneGeometry(0.035, 1.6), new MeshBasicMaterial({ color: "#4593ff", transparent: true, blending: AdditiveBlending, depthWrite: false }));
-  slots[2].inner.add(scan);
-  const stackGlow = new Sprite(new SpriteMaterial({ map: dot, color: "#4593ff", transparent: true, blending: AdditiveBlending, depthWrite: false }));
-  stackGlow.scale.set(3.2, 2.4, 1); stackGlow.position.z = -0.6;
-  slots[2].inner.add(stackGlow);
-
   const redraw = () => {
     drawWaxSeal(sealCv, fonts.sans); drawWaxSeal(waxCv, fonts.sans);
     drawEnvelopeFace(faceCv);
-    cards.forEach((c) => drawDeal(c.cv, c.d, true, fonts));
     textures.forEach((t) => { t.needsUpdate = true; });
   };
   redraw();
@@ -245,7 +218,7 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   quad.frustumCulled = false;
   post.add(quad);
 
-  const glows = [null, plotGlow, stackGlow];
+  const glows = [null, plotGlow];
   // depth of field: pmndrs DepthOfFieldEffect, made the first time it is switched on. It runs on the same
   // render (full resolution, multisampled, half float, linear) as the atmosphere grade, with its depth.
   let dofChain: { pass: EffectPass; effect: DepthOfFieldEffect; w: number; h: number } | null = null;
@@ -259,8 +232,8 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
     dofChain = { pass, effect, w: 0, h: 0 };
     return dofChain;
   };
-  const anchor = new Vector3(), v = new Vector3(), ray = new Raycaster();
-  let rot = 0; // the turntable's angle: product i is at the front when rot = i (in thirds of a turn)
+  const anchor = new Vector3(), v = new Vector3(), v2 = new Vector2(), ray = new Raycaster();
+  let rot = 0; // the turntable's angle: product i is at the front when rot = i (in thirds of a turn; only 0 and 1 are used)
 
   function update({ target, t, dt, still, w, h }: { target: number; t: number; dt: number; still: boolean; w: number; h: number }) {
     // the ring turns toward the target (eased); still: it jumps
@@ -300,7 +273,7 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
       const glow = glows[i];
       if (glow) (glow.material as SpriteMaterial).opacity = (0.12 + 0.28 * front) * T.frontGlow;
     });
-    // Trust Sensor: lit and glowing like the hero's envelopes (in the beam), its edge glow as strong as theirs
+    // iSale: lit and glowing like the hero's envelopes (in the beam), its edge glow as strong as theirs
     const fFront = Math.max(0, Math.cos(turntable.rotation.y));
     env.setLight(1, HERO_DEFAULTS.envelopeGlow);
     env.g.rotation.x = 0.12 + sp * Math.sin(t * 0.4) * 0.05;
@@ -311,15 +284,6 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
     kit.tubeMat.uniforms.uTime.value = t; kit.tubeMat.uniforms.uFlow.value = 1;
     sensors.forEach((s, j) => { (s.material as SpriteMaterial).opacity = still ? 0.9 : 0.55 + 0.45 * Math.max(0, Math.sin(t * 2.2 + j * 1.6)); });
     (led.material as SpriteMaterial).opacity = still ? 0.9 : 0.5 + 0.5 * Math.max(0, Math.sin(t * 3));
-    // iSale: the cards float, the scan passes, the risky one glows
-    cards.forEach((c, j) => { c.m.position.y = c.y0 + sp * Math.sin(t * 0.8 + j) * 0.03; });
-    const risky = cards[2].m;
-    flag.position.copy(risky.position).add(v.set(0, 0, -0.05));
-    const sweep = still ? 0.5 : (t * 0.3) % 1;
-    scan.position.set(lerp(-1.0, 1.0, sweep), 0, 0.3);
-    (scan.material as MeshBasicMaterial).opacity = 0.8 * Math.sin(Math.PI * sweep);
-    (flag.material as SpriteMaterial).opacity = 0.35 + 0.35 * Math.exp(-(((sweep - 0.5) / 0.12) ** 2)) + (still ? 0 : 0.08 * Math.sin(t * 3));
-
     // the light: a column falling on the front spot, and its pool on the floor
     const bu = (beam.material as ShaderMaterial).uniforms;
     bu.uTime.value = t; bu.uAlpha.value = T.spotlight; bu.uColor.value.set(T.beamColor);
@@ -368,8 +332,8 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   }
 
   // which object is under a point (normalised device coordinates), or -1
-  function pick(ndc: Vector2) {
-    ray.setFromCamera(ndc, camera);
+  function pick(p: { x: number; y: number }) {
+    ray.setFromCamera(v2.set(p.x, p.y), camera);
     let best = -1, bestD = Infinity;
     slots.forEach((s, i) => {
       const hit = ray.intersectObject(s.inner, true).find((x) => (x.object as Mesh).isMesh);

@@ -5,27 +5,27 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Vector2 } from "three";
+import { href, type Lang } from "@/i18n";
+import { homeCopy } from "./content";
 import { homeTune as T } from "./homeTuning";
 import type { RingApi } from "./RingCanvas";
 
 // WebGL only in the browser
 const RingCanvas = dynamic(() => import("./RingCanvas"), { ssr: false });
 
-// in the ring's order (Trust Sensor first): see PRODUCTS in ringScene.ts
-export const SLIDES = [
-  { key: "trust-sensor", name: "Trust Sensor", tagline: "Trusted deal records", href: "/trust-sensor/", accent: "#d9a34a" },
-  { key: "agro", name: "AGRO", tagline: "Smart irrigation", href: "/agro/", accent: "#46b876" },
-  { key: "isale", name: "iSale", tagline: "Revenue intelligence", href: "/isale/", accent: "#4593ff" },
-] as const;
-const N = SLIDES.length;
+// in the ring's order (iSale first): see PRODUCTS in ringScene.ts
+const KEYS = [["isale", "#d9a34a"], ["agro", "#46b876"]] as const;
 
 /**
- * The three products as 3D objects on a turntable (one WebGL scene, see ringScene.ts). Every few seconds
- * the ring turns to bring the next one to the front (paused while the pointer or focus is on it, off with
- * reduced motion). Click an object, its label or a tab to bring it forward; click the front one to open its page.
+ * The two products as 3D objects on a turntable (one WebGL scene, see ringScene.ts), FIRMA's seal at its centre.
+ * Every few seconds the ring swings to bring the other one to the front (paused while the pointer or focus is on
+ * it, off with reduced motion). Click an object, its label or a tab to bring it forward; click the front one to
+ * open its page.
  */
-export function ProductRing() {
+export function ProductRing({ lang = "en" }: { lang?: Lang }) {
+  const c = homeCopy(lang);
+  const SLIDES = KEYS.map(([key, accent]) => ({ key, accent, href: href(lang, key), name: c.ring[key][0], tagline: c.ring[key][1] }));
+  const N = SLIDES.length;
   const router = useRouter();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -38,32 +38,31 @@ export function ProductRing() {
 
   useEffect(() => { setReduce(window.matchMedia("(prefers-reduced-motion: reduce)")); }, []);
 
-  // bring product i to the front the short way round (forward: always onward, for autoplay)
-  const go = useCallback((i: number, forward = false) => {
-    let d = (((i - target.current) % N) + N) % N;
-    if (!forward && d > N / 2) d -= N;
-    target.current += d;
-    setActive(((i % N) + N) % N);
-  }, []);
+  // bring product i to the front: the ring swings between its two slots (0 and 1), never round past the empty one
+  const go = useCallback((i: number) => {
+    const k = ((i % N) + N) % N;
+    target.current = k;
+    setActive(k);
+  }, [N]);
 
   useEffect(() => {
     if (paused || still || T.interval <= 0) return;
-    const id = window.setTimeout(() => { if (!document.hidden) go(active + 1, true); }, T.interval * 1000);
+    const id = window.setTimeout(() => { if (!document.hidden) go(active + 1); }, T.interval * 1000);
     return () => window.clearTimeout(id);
   }, [active, paused, still, go]);
 
   const choose = (i: number) => (i === active ? router.push(SLIDES[i].href) : go(i));
   const hit = (e: React.MouseEvent) => {
     const r = stage.current!.getBoundingClientRect();
-    return api.current?.pick(new Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1)) ?? -1;
+    return api.current?.pick({ x: ((e.clientX - r.left) / r.width) * 2 - 1, y: -((e.clientY - r.top) / r.height) * 2 + 1 }) ?? -1;
   };
 
   return (
-    <div className="prod-ring" role="region" aria-roledescription="carousel" aria-label="Inovi products"
+    <div className="prod-ring" role="region" aria-roledescription={c.carousel} aria-label={c.ringLabel}
       onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}
       onKeyDown={(e) => {
-        if (e.key === "ArrowRight") { e.preventDefault(); go(active + 1, true); }
+        if (e.key === "ArrowRight") { e.preventDefault(); go(active + 1); }
         else if (e.key === "ArrowLeft") { e.preventDefault(); go(active - 1); }
       }}>
       <div className="prod-ring-stage" ref={stage}
@@ -74,16 +73,16 @@ export function ProductRing() {
           <div key={sl.key} ref={(el) => { labels.current[i] = el; }} className={`prod-ring-label${i === active ? " is-front" : ""}`}
             style={{ ["--accent" as string]: sl.accent }}>
             <button type="button" onClick={(e) => { e.stopPropagation(); choose(i); }}
-              aria-label={i === active ? `Open ${sl.name}` : `Bring ${sl.name} to the front`}>
+              aria-label={i === active ? c.open(sl.name) : c.bring(sl.name)}>
               <b><i />{sl.name}</b><span>{sl.tagline}</span>
             </button>
             {i === active && (
-              <Link href={sl.href} onClick={(e) => e.stopPropagation()}>Explore {sl.name} <ArrowRight size={13} aria-hidden="true" /></Link>
+              <Link href={sl.href} onClick={(e) => e.stopPropagation()}>{c.explore(sl.name)} <ArrowRight size={13} aria-hidden="true" /></Link>
             )}
           </div>
         ))}
       </div>
-      <div className="carousel-tabs" role="tablist" aria-label="Choose a product">
+      <div className="carousel-tabs" role="tablist" aria-label={c.choose}>
         {SLIDES.map((sl, i) => (
           <button key={sl.key} type="button" role="tab" aria-selected={i === active} style={{ ["--accent" as string]: sl.accent }} onClick={() => go(i)}>
             <b>{sl.name}</b><span>{sl.tagline}</span>
@@ -91,6 +90,9 @@ export function ProductRing() {
               style={{ animationDuration: `${T.interval}s`, animationPlayState: i === active && !paused && !still && T.interval > 0 ? "running" : "paused", opacity: i === active ? 1 : 0 }} />
           </button>
         ))}
+        <Link href={href(lang, "firma")} className="ring-platform">
+          <b>FIRMA</b><span>{c.builtOn}</span>
+        </Link>
       </div>
     </div>
   );

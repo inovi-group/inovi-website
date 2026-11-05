@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { href, type Lang } from "@/i18n";
+import { ui } from "@/i18n/ui";
 
-// FIRMA's wax seal, drawn small: the same crimson as the seals on the Trust Sensor envelopes, a gold ring, the F.
+// FIRMA's wax seal, drawn small: the same crimson as the seals on the iSale envelopes, a gold ring, the F.
 function SealMark({ size = 30 }: { size?: number }) {
   const blob = Array.from({ length: 48 }, (_, i) => {
     const t = (i / 48) * Math.PI * 2, r = 14 + Math.sin(t * 9) * 0.6 + Math.sin(t * 5 + 1) * 0.4;
@@ -15,13 +17,14 @@ function SealMark({ size = 30 }: { size?: number }) {
   );
 }
 
-/** "Secured by FIRMA": a small seal under each product's hero, linking to the trust layer's page. */
-export function FirmaSeal({ className = "" }: { className?: string }) {
+/** "Built on FIRMA": a small seal under each product's hero, linking to the platform's page. */
+export function FirmaSeal({ className = "", lang = "en" }: { className?: string; lang?: Lang }) {
+  const [pre, name] = ui(lang).seal;
   return (
-    <Link href="/firma/" className={`group inline-flex items-center gap-2.5 rounded-full border border-line bg-ink/70 py-1 pl-1 pr-3.5 backdrop-blur-sm transition-colors hover:border-firma ${className}`}>
+    <Link href={href(lang, "firma")} className={`group inline-flex items-center gap-2.5 rounded-full border border-line bg-ink/70 py-1 pl-1 pr-3.5 backdrop-blur-sm transition-colors hover:border-firma ${className}`}>
       <SealMark />
       <span className="font-mono text-[10.5px] uppercase leading-tight tracking-[0.14em] text-dim">
-        Secured by <b className="font-semibold text-text group-hover:text-firma">FIRMA</b>
+        {pre} <b className="font-semibold text-text group-hover:text-firma">{name}</b>
       </span>
     </Link>
   );

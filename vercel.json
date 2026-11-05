@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "trailingSlash": true,
+  "redirects": [
+    { "source": "/trust-sensor/:path*", "destination": "/isale/", "permanent": true },
+    { "source": "/fides/:path*", "destination": "/isale/", "permanent": true },
+    { "source": "/firma/experience/:path*", "destination": "/isale/", "permanent": true },
+    { "source": "/fr/about/:path*", "destination": "/fr/a-propos/", "permanent": true }
+  ],
+  "headers": [
+    { "source": "/_next/static/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] },
+    { "source": "/og/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }] }
+  ]
+}

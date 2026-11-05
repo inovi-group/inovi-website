@@ -29,6 +29,7 @@ import {
   type Texture,
 } from "three";
 import { agroTune as T, AGRO_LIMITS } from "./agroTuning";
+import { AGRO_SCENE_TEXT } from "./content";
 
 /**
  * AGRO's soil, in cutaway. A block of field floats over a faint grid under a soft column of light: crops on top,
@@ -303,7 +304,7 @@ function drawBracket(cv: HTMLCanvasElement, F: Fonts) {
   c.save(); c.translate(40, H / 2); c.rotate(-Math.PI / 2);
   c.fillStyle = "#7fe0a0"; c.font = `600 ${Math.round(W * 0.2)}px ${F.mono}`; c.textAlign = "center"; c.textBaseline = "middle";
   c.shadowColor = "rgba(10,13,19,0.9)"; c.shadowBlur = 8;
-  c.fillText("ROOT ZONE", 0, 0);
+  c.fillText(AGRO_SCENE_TEXT.rootZone, 0, 0);
   c.restore();
 }
 
@@ -325,10 +326,10 @@ function drawPhone(cv: HTMLCanvasElement, F: Fonts) {
   rr(sx, sy, sw, sh, 18); c.fillStyle = "#0c2419"; c.fill();
   c.lineWidth = 3; c.strokeStyle = "rgba(127,224,160,0.35)"; c.stroke();
   c.fillStyle = "#7fe0a0"; c.font = `700 30px ${F.mono}`; c.fillText("AGRO", sx + 26, sy + 52);
-  c.fillStyle = "rgba(127,224,160,0.6)"; c.font = `500 22px ${F.mono}`; c.textAlign = "right"; c.fillText("SMS · 05:40", sx + sw - 24, sy + 50);
+  c.fillStyle = "rgba(127,224,160,0.6)"; c.font = `500 22px ${F.mono}`; c.textAlign = "right"; c.fillText(AGRO_SCENE_TEXT.sms, sx + sw - 24, sy + 50);
   c.textAlign = "left";
   c.fillStyle = "rgba(127,224,160,0.35)"; c.fillRect(sx + 24, sy + 72, sw - 48, 2);
-  const lines = ["Plot 2: roots dry", "at 30 cm.", "", "Irrigate 25 min", "after 5 pm.", "", "Deep soil is wet:", "no extra water."];
+  const lines = AGRO_SCENE_TEXT.lines;
   c.fillStyle = "#c9f5d8"; c.font = `600 29px ${F.mono}`;
   lines.forEach((l, i) => c.fillText(l, sx + 26, sy + 122 + i * 39));
   // keypad

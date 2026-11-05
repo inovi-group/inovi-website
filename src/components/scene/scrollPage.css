@@ -1,4 +1,4 @@
-/* Scroll pages over a fixed 3D scene (/agro, /isale), in the Trust Sensor page's layout. Scoped to .sx; the
+/* Scroll pages over a fixed 3D scene (/agro/, /fr/agro/), in the iSale page's layout. Scoped to .sx; the
    page sets its accent (--accent, --accent-soft). The scene is always dark, like the Firma page. */
 html:has(.sx) {
   --color-ink: #0a0d13;
