@@ -42,7 +42,10 @@ function Ring({ target, labels, api, reduceMotion, lang }: Props) {
     r.labels(size.width, size.height).forEach((p, i) => {
       const el = labels.current[i];
       if (!el) return;
-      el.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px) translate(-50%, 0) scale(${(0.82 + 0.18 * p.front).toFixed(3)})`;
+      // kept inside the ring's area, so a label at the side never runs off a phone screen
+      const scale = 0.82 + 0.18 * p.front, half = (el.offsetWidth * scale) / 2 + 8;
+      const x = Math.min(size.width - half, Math.max(half, p.x));
+      el.style.transform = `translate(${x.toFixed(1)}px, ${p.y.toFixed(1)}px) translate(-50%, 0) scale(${scale.toFixed(3)})`;
       el.style.opacity = (0.45 + 0.55 * p.front).toFixed(3);
       el.style.zIndex = String(Math.round(p.front * 10));
     });

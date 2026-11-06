@@ -12,6 +12,7 @@ import { featuresFor } from "./features";
 import { ISALE_APP, MAIL, type Lang } from "@/i18n";
 import { ui } from "@/i18n/ui";
 import { Faq } from "@/components/Faq";
+import { brand } from "@/components/Brand";
 import { mountFlow } from "./flow";
 import { mountStory } from "./story";
 import { pageTop } from "./listen";
@@ -66,7 +67,7 @@ function Ctas({ lang }: { lang: Lang }) {
 function StepBody({ step: [idx, h, what, why], i, why: whyLabel }: { step: Step; i: number; why: string }) {
   return (
     <div className="big-step">
-      <span className="idx">{idx}</span>
+      <span className="idx">{brand(idx)}</span>
       <h2 id={`b-${i + 1}`}>{h}</h2>
       <p className="what">{what}</p>
       <p className="why"><b>{whyLabel}</b>{why}</p>
@@ -81,7 +82,7 @@ function Features({ lang }: { lang: Lang }) {
   return (
     <section className="section trust" id="features" aria-labelledby="h-trust">
       <div>
-        <span className="idx">{t.featuresIdx}</span>
+        <span className="idx">{brand(t.featuresIdx)}</span>
         <h2 id="h-trust">{t.featuresTitle}</h2>
         <p className="trust-lede">{t.featuresLede}</p>
         <ul className="trust-grid">
@@ -253,7 +254,7 @@ export function IsaleExperience({ lang = "en" }: { lang?: Lang }) {
 
         <section className="section calm close" id="summary" aria-labelledby="h-end">
           <div className="step">
-            <span className="idx">{t.closeIdx}</span>
+            <span className="idx">{brand(t.closeIdx)}</span>
             <h2 id="h-end">{t.closeTitle}</h2>
             <p>{t.closeText}</p>
             <Ctas lang={lang} />
