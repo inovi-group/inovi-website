@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import clsx from "clsx";
+import { brand } from "./Brand";
 
 const tones = {
   accent: { corner: "border-accent", dot: "bg-accent" },
@@ -31,7 +32,7 @@ export function Stamp({
         className={clsx("absolute -bottom-px -right-px h-2.5 w-2.5 border-b border-r", t.corner)}
       />
       <span aria-hidden="true" className={clsx("h-1.5 w-1.5", t.dot)} />
-      {children}
+      {brand(children)}
     </div>
   );
 }

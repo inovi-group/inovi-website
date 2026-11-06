@@ -82,3 +82,16 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* skip link: hidden until focused */
+.skip-link {
+  position: absolute; left: 12px; top: -48px; z-index: 100; padding: 8px 14px; border-radius: 8px;
+  background: var(--color-accent); color: #fff; font-size: 14px; font-weight: 600; transition: top 0.15s;
+}
+.skip-link:focus { top: 12px; }
+
+/* FAQ over a 3D scene: its own dark ground, like the FIRMA band */
+.faq-dark { background: linear-gradient(180deg, rgba(10,13,19,0), rgba(10,13,19,0.95) 80px, rgba(10,13,19,0.95) calc(100% - 80px), rgba(10,13,19,0)); }
+
+/* product names keep their casing inside uppercase labels (see components/Brand.tsx) */
+.brand-case { text-transform: none; }
