@@ -28,7 +28,8 @@ const themeScript = `(function(){try{var t=localStorage.getItem("inovi-theme");i
 /** The page shell for one language: <html lang>, header, main, footer. */
 export function RootShell({ lang, children }: { lang: Lang; children: React.ReactNode }) {
   return (
-    <html lang={lang === "fr" ? "fr" : "en-GB"} className={`${inter.variable} ${jbmono.variable}`}>
+    // suppressHydrationWarning: the theme script adds class="light" to <html> before React hydrates (on purpose)
+    <html lang={lang === "fr" ? "fr" : "en-GB"} className={`${inter.variable} ${jbmono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

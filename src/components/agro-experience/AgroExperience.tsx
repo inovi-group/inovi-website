@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Stamp } from "@/components/Stamp";
 import { FirmaLayer } from "@/components/firma/FirmaLayer";
-import { FirmaSeal } from "@/components/firma/FirmaSeal";
+import { FirmaBadge } from "@/components/firma/FirmaBadge";
 import { mountFlow } from "../isale-experience/flow";
 import { pageTop } from "../isale-experience/listen";
 import { TunePanel } from "../isale-experience/TunePanel";
@@ -101,7 +101,7 @@ export function AgroExperience({ lang = "en" }: { lang?: Lang }) {
                 {t.cta} <ArrowRight size={16} />
               </a>
             </div>
-            <FirmaSeal className="mt-5" lang={lang} />
+            <FirmaBadge className="mt-5" lang={lang} />
             <div className="scroll-cue">{t.scrollCue}</div>
           </div>
         </section>

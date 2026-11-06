@@ -4,7 +4,8 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, type MutableRefObject } from "react";
 import type { PerspectiveCamera } from "three";
 import { siteFonts } from "../scene/ScrollScene";
-import { createRing, type FirmaVariant } from "./ringScene";
+import { createRing } from "./ringScene";
+import type { Lang } from "@/i18n";
 
 export type RingApi = Pick<ReturnType<typeof createRing>, "pick">;
 type Props = {
@@ -12,24 +13,23 @@ type Props = {
   labels: MutableRefObject<(HTMLElement | null)[]>; // positioned under their objects every frame
   api: MutableRefObject<RingApi | null>;
   reduceMotion: MediaQueryList;
+  lang: Lang;                                       // the language of the words drawn on FIRMA's item
 };
 
 // Renders the product ring itself (its own two passes: the scene with depth, then depth of field).
-function Ring({ target, labels, api, reduceMotion }: Props) {
+function Ring({ target, labels, api, reduceMotion, lang }: Props) {
   const { camera, gl, size } = useThree();
   const ring = useRef<ReturnType<typeof createRing> | null>(null);
   const clock = useRef({ t: 0 });
 
   useEffect(() => {
     const fonts = siteFonts();
-    // ?firma=chain shows FIRMA as a hash being chained into a block; the default (?firma=seal) is the fine-line seal
-    const firma: FirmaVariant = new URLSearchParams(window.location.search).get("firma") === "chain" ? "chain" : "seal";
-    const r = createRing({ camera: camera as PerspectiveCamera, renderer: gl, fonts, firma });
+    const r = createRing({ camera: camera as PerspectiveCamera, renderer: gl, fonts, lang });
     ring.current = r; api.current = r;
     let alive = true;
     Promise.all([document.fonts?.load(`600 30px ${fonts.mono}`), document.fonts?.load(`700 30px ${fonts.sans}`)]).catch(() => {}).then(() => alive && r.redraw());
     return () => { alive = false; r.dispose(); ring.current = null; api.current = null; };
-  }, [camera, gl, api]);
+  }, [camera, gl, api, lang]);
 
   // priority 1: this takes over rendering from react-three-fiber
   useFrame((_, delta) => {

@@ -5,7 +5,7 @@ import { ArrowRight, PlayCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Stamp } from "@/components/Stamp";
 import { FirmaLayer } from "@/components/firma/FirmaLayer";
-import { SealMark } from "@/components/firma/FirmaSeal";
+import { ChainMark } from "@/components/firma/FirmaBadge";
 import { DEMO, href, MAIL, type Lang } from "@/i18n";
 import { TunePanel } from "../isale-experience/TunePanel";
 import { HOME_DEFAULTS, HOME_PARAMS, HOME_STORE, homeTune } from "./homeTuning";
@@ -70,7 +70,7 @@ export function HomeExperience({ lang = "en" }: { lang?: Lang }) {
           ))}
         </div>
         <Link className="energy platform" href={href(lang, "firma")}>
-          <SealMark size={20} /><b>{c.platformLine[0]}</b><span>{c.platformLine[1]}</span><i>{c.platformLine[2]} <ArrowRight size={13} aria-hidden="true" /></i>
+          <ChainMark size={20} /><b>{c.platformLine[0]}</b><span>{c.platformLine[1]}</span><i>{c.platformLine[2]} <ArrowRight size={13} aria-hidden="true" /></i>
         </Link>
       </section>
 

@@ -69,7 +69,7 @@ export function ProductRing({ lang = "en" }: { lang?: Lang }) {
       <div className="prod-ring-stage" ref={stage}
         onClick={(e) => { const i = hit(e); if (i >= 0) choose(i); }}
         onMouseMove={(e) => { stage.current!.style.cursor = hit(e) >= 0 ? "pointer" : "default"; }}>
-        {reduce && <RingCanvas target={target} labels={labels} api={api} reduceMotion={reduce} />}
+        {reduce && <RingCanvas target={target} labels={labels} api={api} reduceMotion={reduce} lang={lang} />}
         {SLIDES.map((sl, i) => (
           <div key={sl.key} ref={(el) => { labels.current[i] = el; }} className={`prod-ring-label${i === active ? " is-front" : ""}`}
             style={{ ["--accent" as string]: sl.accent }}>

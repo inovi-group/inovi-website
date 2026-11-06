@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Stamp } from "@/components/Stamp";
 import { FirmaLayer } from "@/components/firma/FirmaLayer";
-import { FirmaSeal } from "@/components/firma/FirmaSeal";
+import { FirmaBadge } from "@/components/firma/FirmaBadge";
 import { applyOutcome, createStoryData, type Outcome, type StoryData } from "./content";
 import { copyFor, STEP_COUNT, type Step } from "./copy";
 import { featuresFor } from "./features";
@@ -222,7 +222,7 @@ export function IsaleExperience({ lang = "en" }: { lang?: Lang }) {
               {t.values.map(([b, span]) => <li key={b}><b>{b}</b><span>{span}</span></li>)}
             </ul>
             <Ctas lang={lang} />
-            <FirmaSeal className="mt-5" lang={lang} />
+            <FirmaBadge className="mt-5" lang={lang} />
             <div className="scroll-cue">{t.scrollCue}</div>
           </div>
         </section>

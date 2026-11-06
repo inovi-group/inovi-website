@@ -9,6 +9,7 @@ import { pageMeta } from "@/i18n/meta";
 import { breadcrumbs, graph, ORG_ID, webPage } from "@/i18n/schema";
 import { ui } from "@/i18n/ui";
 import { firmaCopy } from "./firmaCopy";
+import { ChainDiagram } from "./ChainDiagram";
 
 export const firmaMeta = (lang: Lang) => pageMeta(lang, "firma", firmaCopy(lang).metaTitle, firmaCopy(lang).metaDescription);
 
@@ -35,7 +36,8 @@ export function FirmaPage({ lang }: { lang: Lang }) {
       <JsonLd data={schema} />
       <section className="relative overflow-hidden">
         <div className="grid-backdrop absolute inset-0" aria-hidden="true" />
-        <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:pt-28">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-20 sm:pt-28 lg:grid-cols-[1.05fr_0.95fr]">
+          <div>
           <Reveal><Stamp tone="firma">{t.stamp}</Stamp></Reveal>
           <Reveal delay={0.08}>
             <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight text-text sm:text-5xl">{t.h1}</h1>
@@ -52,6 +54,11 @@ export function FirmaPage({ lang }: { lang: Lang }) {
                 <PlayCircle size={16} /> {t.ctaDemo}
               </a>
             </div>
+          </Reveal>
+          </div>
+          {/* FIRMA's chain, the same picture as its item on the home ring */}
+          <Reveal delay={0.2}>
+            <ChainDiagram lang={lang} className="mx-auto w-full max-w-[520px]" />
           </Reveal>
         </div>
       </section>
