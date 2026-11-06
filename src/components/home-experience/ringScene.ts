@@ -4,6 +4,7 @@ import {
   BufferGeometry,
   CanvasTexture,
   CircleGeometry,
+  CylinderGeometry,
   Color,
   DepthTexture,
   EdgesGeometry,
@@ -17,7 +18,9 @@ import {
   OrthographicCamera,
   PlaneGeometry,
   Raycaster,
+  RingGeometry,
   Scene,
+  SphereGeometry,
   ShaderMaterial,
   Sprite,
   SpriteMaterial,
@@ -40,11 +43,11 @@ import { homeTune as T } from "./homeTuning";
 import { cameraPosition, objectYaws, stepRing, turnOf } from "./ringMotion";
 
 /**
- * The home page's product ring: one 3D scene, the two products on a turntable that physically turns.
+ * The home page's ring: one 3D scene, three objects on a turntable that physically turns.
  * iSale is the golden envelope with its crimson wax seal; AGRO a block of field in cutaway, a probe glowing in
- * its root zone and water under the crops. At the centre, on the floor, FIRMA, the platform both are built on:
- * a gold ring through both and its seal in the middle. The products sit a third of a turn apart (slots 0 and 1),
- * so the one at the back stays in view beside the front one; the ring swings between them.
+ * its root zone and water under the crops; FIRMA, the platform under both, a brass seal stamp that presses down on
+ * a record and leaves its crimson wax imprint, again and again. At the centre, on the floor, a gold ring through
+ * all three and FIRMA's seal in the middle.
  *
  * The object at the front is close, large, sharp and lit (a soft column of light falls on it). The two at the
  * back recede in one of two ways (homeTune.depthMode):
@@ -56,7 +59,7 @@ import { cameraPosition, objectYaws, stepRing, turnOf } from "./ringMotion";
 const TAU = Math.PI * 2;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const FLOOR_Y = -1.05;
-export const PRODUCTS = ["isale", "agro"] as const;
+export const PRODUCTS = ["isale", "agro", "firma"] as const;
 
 type Fonts = { sans: string; mono: string };
 const canvasOf = (w: number, h: number) => Object.assign(document.createElement("canvas"), { width: w, height: h });
@@ -140,7 +143,7 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   pool.rotation.x = -Math.PI / 2;
   scene.add(pool);
 
-  // ---- the two products ----
+  // ---- the three objects ----
   const slots = PRODUCTS.map(() => { const outer = new Group(), inner = new Group(); outer.add(inner); turntable.add(outer); return { outer, inner }; });
 
   // iSale: the iSale hero's own envelope: the same model, gold face, crimson wax seal (pressed), gold light and
@@ -202,9 +205,64 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   plotGlow.scale.set(3.2, 2.2, 1); plotGlow.position.set(0, -0.3, -0.4);
   slots[1].inner.add(plotGlow, plot);
 
+  // FIRMA: a seal stamp over a record. The record lies on a small desk tilted toward the camera; the stamp presses
+  // down along the desk's normal, and where it lands a crimson wax imprint appears with a ring of light.
+  const desk = new Group();
+  desk.rotation.x = 0.42; desk.position.y = -0.42;
+  const recCv = canvasOf(768, 512);
+  const record = new Mesh(new PlaneGeometry(1.6, 1.07), new MeshBasicMaterial({ map: texOf(recCv) }));
+  record.rotation.x = -Math.PI / 2;
+  const recEdge = new LineSegments(new EdgesGeometry(new PlaneGeometry(1.6, 1.07)), new LineBasicMaterial({ color: "#d9a34a", transparent: true, opacity: 0.8 }));
+  recEdge.rotation.x = -Math.PI / 2; recEdge.position.y = 0.002;
+  const impCv = canvasOf(256, 256);
+  const imprint = new Mesh(new CircleGeometry(0.3, 48), new MeshBasicMaterial({ map: texOf(impCv), color: HERO_DEFAULTS.stampColor, transparent: true, depthWrite: false }));
+  imprint.rotation.x = -Math.PI / 2; imprint.position.set(0.18, 0.004, 0.05);
+  const pulse = new Mesh(new RingGeometry(0.3, 0.36, 64), new MeshBasicMaterial({ color: "#ffd98a", transparent: true, blending: AdditiveBlending, depthWrite: false }));
+  pulse.rotation.x = -Math.PI / 2; pulse.position.set(0.18, 0.006, 0.05);
+  const shadow = new Mesh(new CircleGeometry(0.34, 40), new MeshBasicMaterial({ map: dot, color: "#000000", transparent: true, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2; shadow.position.set(0.18, 0.003, 0.05);
+  // the stamp: brass die, a neck, a dark wooden knob with a gold band; drawn unlit with bright edges, like the probe
+  const stamp = new Group();
+  stamp.position.set(0.18, 0.75, 0.05);
+  const brass = new MeshBasicMaterial({ color: "#a8772d" });
+  const die = new Mesh(new CylinderGeometry(0.31, 0.33, 0.12, 40), brass);
+  die.position.y = 0.06;
+  const dieE = new LineSegments(new EdgesGeometry(new CylinderGeometry(0.31, 0.33, 0.12, 40), 30), new LineBasicMaterial({ color: "#ffd98a" }));
+  dieE.position.y = 0.06;
+  const neck = new Mesh(new CylinderGeometry(0.09, 0.12, 0.34, 24), new MeshBasicMaterial({ color: "#7a5522" }));
+  neck.position.y = 0.29;
+  const band = new Mesh(new CylinderGeometry(0.13, 0.13, 0.05, 32), new MeshBasicMaterial({ color: "#d9a34a" }));
+  band.position.y = 0.47;
+  const knob = new Mesh(new SphereGeometry(0.2, 32, 20), new MeshBasicMaterial({ color: "#3a2414" }));
+  knob.position.y = 0.62; knob.scale.y = 0.85;
+  const knobLight = new Sprite(new SpriteMaterial({ map: dot, color: "#ffcf7a", transparent: true, blending: AdditiveBlending, depthWrite: false }));
+  knobLight.position.set(-0.06, 0.68, 0.14); knobLight.scale.setScalar(0.22);
+  stamp.add(die, dieE, neck, band, knob, knobLight);
+  desk.add(record, recEdge, shadow, imprint, pulse, stamp);
+  const firmaGlow = new Sprite(new SpriteMaterial({ map: dot, color: "#d9a34a", transparent: true, blending: AdditiveBlending, depthWrite: false }));
+  firmaGlow.scale.set(3.2, 2.4, 1); firmaGlow.position.set(0, -0.1, -0.5);
+  slots[2].inner.add(firmaGlow, desk);
+
+  // the record the stamp seals: a cream sheet with a heading, a few lines of entries and their hashes
+  function drawRecordSheet(cv: HTMLCanvasElement) {
+    const c = cv.getContext("2d")!, W = cv.width, H = cv.height;
+    const g = c.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, "#f3e6c8"); g.addColorStop(1, "#d9c39a");
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    c.fillStyle = "#8f1d2c"; c.fillRect(44, 44, 18, 18);
+    c.fillStyle = "#3c2a12"; c.font = `700 40px ${fonts.sans}`; c.fillText("FIRMA", 76, 64);
+    c.fillStyle = "rgba(60,42,18,0.65)"; c.font = `600 22px ${fonts.mono}`; c.fillText("RECORD · SHA3-512", 44, 108);
+    c.fillStyle = "rgba(60,42,18,0.22)";
+    for (let i = 0; i < 6; i++) c.fillRect(44, 150 + i * 46, (i % 3 === 2 ? 260 : 380) - i * 6, 12);
+    c.fillStyle = "rgba(60,42,18,0.45)"; c.font = `500 18px ${fonts.mono}`;
+    ["a3f1…9c2e", "7b0d…41aa", "e95c…07f3"].forEach((h, i) => c.fillText(`hash ${h}`, 44 + i * 236, 456));
+    c.strokeStyle = "rgba(60,42,18,0.35)"; c.lineWidth = 3; c.strokeRect(10, 10, W - 20, H - 20);
+  }
+
   const redraw = () => {
     drawWaxSeal(sealCv, fonts.sans); drawWaxSeal(waxCv, fonts.sans);
     drawEnvelopeFace(faceCv);
+    drawRecordSheet(recCv); drawWaxSeal(impCv, fonts.sans);
     textures.forEach((t) => { t.needsUpdate = true; });
   };
   redraw();
@@ -218,7 +276,7 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
   quad.frustumCulled = false;
   post.add(quad);
 
-  const glows = [null, plotGlow];
+  const glows = [null, plotGlow, firmaGlow];
   // depth of field: pmndrs DepthOfFieldEffect, made the first time it is switched on. It runs on the same
   // render (full resolution, multisampled, half float, linear) as the atmosphere grade, with its depth.
   let dofChain: { pass: EffectPass; effect: DepthOfFieldEffect; w: number; h: number } | null = null;
@@ -284,6 +342,30 @@ export function createRing({ camera, renderer, fonts }: { camera: PerspectiveCam
     kit.tubeMat.uniforms.uTime.value = t; kit.tubeMat.uniforms.uFlow.value = 1;
     sensors.forEach((s, j) => { (s.material as SpriteMaterial).opacity = still ? 0.9 : 0.55 + 0.45 * Math.max(0, Math.sin(t * 2.2 + j * 1.6)); });
     (led.material as SpriteMaterial).opacity = still ? 0.9 : 0.5 + 0.5 * Math.max(0, Math.sin(t * 3));
+    // FIRMA: the stamp comes down, presses, and lifts; the imprint appears at contact with a ring of light, and
+    // fades just before the next press. Still (reduced motion): the stamp held up, the imprint on the record.
+    {
+      const P = 3.6, u = still ? 0.7 : (t % P) / P;
+      const UP = 0.75, DOWN = 0.0;
+      const ease = (x: number) => x * x * (3 - 2 * x);
+      let y = UP + (still ? 0 : Math.sin(t * 1.6) * 0.03), squash = 1;
+      if (u >= 0.32 && u < 0.42) y = lerp(UP, DOWN, ((u - 0.32) / 0.1) ** 2);          // falls, faster and faster
+      else if (u >= 0.42 && u < 0.52) { y = DOWN; squash = 1 - 0.06 * Math.sin(Math.PI * (u - 0.42) / 0.1); } // pressed
+      else if (u >= 0.52 && u < 0.8) y = lerp(DOWN, UP, ease((u - 0.52) / 0.28));      // lifts
+      stamp.position.y = y; stamp.scale.set(1, squash, 1);
+      const near = 1 - Math.min(1, y / UP);
+      (shadow.material as MeshBasicMaterial).opacity = 0.15 + 0.5 * near;
+      shadow.scale.setScalar(1.25 - 0.35 * near);
+      // the imprint: there from contact until it fades before the next press
+      const on = still ? 1 : u >= 0.42 ? Math.min(1, (u - 0.42) / 0.03) * (u > 0.9 ? Math.max(0, 1 - (u - 0.9) / 0.1) : 1) : 0;
+      (imprint.material as MeshBasicMaterial).opacity = on;
+      imprint.scale.setScalar(still ? 1 : u >= 0.42 ? 0.9 + 0.1 * Math.min(1, (u - 0.42) / 0.06) : 0.9);
+      const pk = still ? 0 : u >= 0.42 && u < 0.72 ? (u - 0.42) / 0.3 : 0;
+      pulse.scale.setScalar(1 + pk * 1.6);
+      (pulse.material as MeshBasicMaterial).opacity = pk > 0 ? 0.9 * (1 - pk) : 0;
+      (knobLight.material as SpriteMaterial).opacity = 0.7;
+    }
+
     // the light: a column falling on the front spot, and its pool on the floor
     const bu = (beam.material as ShaderMaterial).uniforms;
     bu.uTime.value = t; bu.uAlpha.value = T.spotlight; bu.uColor.value.set(T.beamColor);

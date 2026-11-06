@@ -14,11 +14,11 @@ import type { RingApi } from "./RingCanvas";
 const RingCanvas = dynamic(() => import("./RingCanvas"), { ssr: false });
 
 // in the ring's order (iSale first): see PRODUCTS in ringScene.ts
-const KEYS = [["isale", "#d9a34a"], ["agro", "#46b876"]] as const;
+const KEYS = [["isale", "#d9a34a"], ["agro", "#46b876"], ["firma", "#e0645c"]] as const;
 
 /**
- * The two products as 3D objects on a turntable (one WebGL scene, see ringScene.ts), FIRMA's seal at its centre.
- * Every few seconds the ring swings to bring the other one to the front (paused while the pointer or focus is on
+ * iSale, AGRO and FIRMA as 3D objects on a turntable (one WebGL scene, see ringScene.ts). Every few seconds the
+ * ring turns to bring the next one to the front (paused while the pointer or focus is on
  * it, off with reduced motion). Click an object, its label or a tab to bring it forward; click the front one to
  * open its page.
  */
@@ -38,16 +38,17 @@ export function ProductRing({ lang = "en" }: { lang?: Lang }) {
 
   useEffect(() => { setReduce(window.matchMedia("(prefers-reduced-motion: reduce)")); }, []);
 
-  // bring product i to the front: the ring swings between its two slots (0 and 1), never round past the empty one
-  const go = useCallback((i: number) => {
-    const k = ((i % N) + N) % N;
-    target.current = k;
-    setActive(k);
+  // bring item i to the front the short way round (forward: always onward, for autoplay)
+  const go = useCallback((i: number, forward = false) => {
+    let d = (((i - target.current) % N) + N) % N;
+    if (!forward && d > N / 2) d -= N;
+    target.current += d;
+    setActive(((i % N) + N) % N);
   }, [N]);
 
   useEffect(() => {
     if (paused || still || T.interval <= 0) return;
-    const id = window.setTimeout(() => { if (!document.hidden) go(active + 1); }, T.interval * 1000);
+    const id = window.setTimeout(() => { if (!document.hidden) go(active + 1, true); }, T.interval * 1000);
     return () => window.clearTimeout(id);
   }, [active, paused, still, go]);
 
@@ -62,7 +63,7 @@ export function ProductRing({ lang = "en" }: { lang?: Lang }) {
       onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}
       onKeyDown={(e) => {
-        if (e.key === "ArrowRight") { e.preventDefault(); go(active + 1); }
+        if (e.key === "ArrowRight") { e.preventDefault(); go(active + 1, true); }
         else if (e.key === "ArrowLeft") { e.preventDefault(); go(active - 1); }
       }}>
       <div className="prod-ring-stage" ref={stage}
@@ -90,9 +91,6 @@ export function ProductRing({ lang = "en" }: { lang?: Lang }) {
               style={{ animationDuration: `${T.interval}s`, animationPlayState: i === active && !paused && !still && T.interval > 0 ? "running" : "paused", opacity: i === active ? 1 : 0 }} />
           </button>
         ))}
-        <Link href={href(lang, "firma")} className="ring-platform">
-          <b>FIRMA</b><span>{c.builtOn}</span>
-        </Link>
       </div>
     </div>
   );

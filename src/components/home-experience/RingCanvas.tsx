@@ -8,7 +8,7 @@ import { createRing } from "./ringScene";
 
 export type RingApi = Pick<ReturnType<typeof createRing>, "pick">;
 type Props = {
-  target: MutableRefObject<number>;                 // the product to bring (and keep) in front: 0 (iSale) or 1 (AGRO)
+  target: MutableRefObject<number>;                 // the item to bring (and keep) in front; unbounded, wraps (0 iSale, 1 AGRO, 2 FIRMA)
   labels: MutableRefObject<(HTMLElement | null)[]>; // positioned under their objects every frame
   api: MutableRefObject<RingApi | null>;
   reduceMotion: MediaQueryList;
