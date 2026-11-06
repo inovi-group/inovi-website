@@ -14,7 +14,7 @@ import type { RingApi } from "./RingCanvas";
 const RingCanvas = dynamic(() => import("./RingCanvas"), { ssr: false });
 
 // in the ring's order (iSale first): see PRODUCTS in ringScene.ts
-const KEYS = [["isale", "#d9a34a"], ["agro", "#46b876"], ["firma", "#e0645c"]] as const;
+const KEYS = [["isale", "#d9a34a"], ["agro", "#46b876"], ["firma", "#c8b48c"]] as const;
 
 /**
  * iSale, AGRO and FIRMA as 3D objects on a turntable (one WebGL scene, see ringScene.ts). Every few seconds the
